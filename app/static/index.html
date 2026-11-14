@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maquinitabs</title>
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <header class="barra-sup">
+    <div class="marca">♪ Maquini<span>tabs</span></div>
+    <form id="form-url">
+      <input id="url" type="url" placeholder="Pegá un link de YouTube de una canción…" autocomplete="off" required>
+      <button type="submit" class="primario">Analizar</button>
+    </form>
+  </header>
+
+  <div class="cuerpo">
+    <aside>
+      <div id="trabajos"></div>
+      <div id="panel-pistas" hidden>
+        <h4>Pistas <small id="estado-audio"></small></h4>
+        <div id="mezclador"></div>
+      </div>
+      <h4>Canciones</h4>
+      <ul id="lista"></ul>
+    </aside>
+
+    <main>
+      <nav class="pestanas" id="pestanas" hidden>
+        <button data-vista="acordes" class="activa">Acordes y estructura</button>
+        <button data-vista="guitarra" title="Partitura y tablatura de la guitarra">Guitarra</button>
+        <button data-vista="piano" title="Partitura del piano o teclado">Piano</button>
+        <button data-vista="bajo" title="Partitura y tablatura del bajo">Bajo</button>
+        <button data-vista="voz" title="Melodía de la voz">Voz</button>
+        <button data-vista="impro">Improvisación</button>
+        <span class="hueco"></span>
+        <button id="btn-editar" class="secundario" title="Corregir acordes y compases escuchando el tema">Editar hoja</button>
+        <button id="btn-estructura" class="secundario" title="Corregir los nombres y tiempos de las secciones">Secciones</button>
+        <button id="btn-imprimir" class="secundario">Imprimir</button>
+      </nav>
+      <div id="vista">
+        <div class="bienvenida">
+          <h1>De un link de YouTube a la sala de ensayo</h1>
+          <p>Pegá un link arriba. La app baja el audio, lo separa en <b>voz, guitarra, piano, bajo, batería y otros</b>,
+            saca <b>acordes, línea de bajo y melodía</b>, arma la <b>hoja de estructura, partitura y tablatura</b>,
+            y te deja <b>mutear pistas, transportar</b> y ver <b>escalas para improvisar</b>.</p>
+          <p class="nota">La separación y el análisis corren en esta compu: una canción tarda unos 5–10 minutos la primera vez.
+            Todo es automático: revisalo de oído.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="reproductor" id="reproductor" hidden>
+    <button id="btn-play" class="play" title="Reproducir / pausar (espacio)">▶</button>
+    <div class="tiempo"><span id="t-actual">0:00</span> / <span id="t-total">0:00</span></div>
+    <input id="barra" type="range" min="0" max="1000" value="0" step="1">
+    <div class="acorde-actual"><small id="seccion-actual">&nbsp;</small><b id="acorde-actual">–</b></div>
+    <div class="opciones">
+      <label title="Clic en cada pulso mientras suena (más agudo en el 1)"><input type="checkbox" id="metro"> Metrónomo</label>
+      <label title="Cuenta un compás antes de arrancar"><input type="checkbox" id="cuenta"> Cuenta previa</label>
+      <label title="Repite la sección que está sonando"><input type="checkbox" id="repetir"> Repetir sección</label>
+    </div>
+    <div class="transporte" title="Transporta el audio y toda la notación">
+      <button id="st-menos">−</button>
+      <div><small>Tonalidad</small><b id="tonalidad">–</b><small id="st-valor">original</small></div>
+      <button id="st-mas">+</button>
+    </div>
+  </footer>
+
+  <dialog id="dlg-estructura">
+    <h3>Estructura del tema</h3>
+    <p>Una sección por línea: <code>m:ss Nombre</code>. Para un compás distinto: <code>2:48.4 Puente [7/4]</code>.
+      Al guardar se vuelve a analizar (1–2 min).</p>
+    <textarea id="txt-estructura" rows="14" spellcheck="false"></textarea>
+    <div class="acciones"><button id="est-cancelar" class="secundario">Cancelar</button><button id="est-guardar" class="primario">Guardar y re-analizar</button></div>
+  </dialog>
+
+  <script src="vendor/vexflow.js"></script>
+  <script src="teoria.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

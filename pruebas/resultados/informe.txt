@@ -1,0 +1,119 @@
+﻿
+Sweet Home Alabama - Lynyrd Skynyrd            (desfase -0.50 s)
+  actual          raíz  83.2  may/men  84.4  séptimas  84.4  mirex  84.4  cortes  89.0
+  btc-original    raíz  83.1  may/men  81.3  séptimas  81.3  mirex  81.3  cortes  88.1
+  pulsos-librosa  raíz  82.3  may/men  83.6  séptimas  83.6  mirex  83.6  cortes  89.0
+  anterior        raíz  83.0  may/men  81.2  séptimas  81.2  mirex  81.2  cortes  88.1
+  combinado       raíz  82.8  may/men  81.3  séptimas  81.3  mirex  81.3  cortes  88.1
+
+Ain't No Sunshine - Bill Withers               (desfase +0.00 s)
+  actual          raíz  82.3  may/men  82.3  séptimas  28.7  mirex  82.3  cortes  77.3
+  btc-original    raíz  75.9  may/men  75.9  séptimas  30.6  mirex  78.0  cortes  86.4
+  pulsos-librosa  raíz  84.6  may/men  84.6  séptimas  28.7  mirex  85.1  cortes  84.4
+  anterior        raíz  75.3  may/men  75.3  séptimas  29.9  mirex  77.4  cortes  86.0
+  combinado       raíz  76.5  may/men  76.5  séptimas  25.2  mirex  78.1  cortes  81.0
+
+Sunshine of Your Love - Cream                  (desfase -0.05 s)
+  actual          raíz  72.0  may/men  67.9  séptimas  53.1  mirex  67.9  cortes  54.1
+  btc-original    raíz  66.8  may/men  63.5  séptimas  63.5  mirex  63.5  cortes  47.6
+  pulsos-librosa  raíz  72.0  may/men  67.9  séptimas  53.1  mirex  67.9  cortes  54.1
+  anterior        raíz  66.8  may/men  63.5  séptimas  63.5  mirex  63.5  cortes  47.6
+  combinado       raíz  66.7  may/men  63.5  séptimas  60.6  mirex  63.5  cortes  47.8
+
+Bad Moon Rising - Creedence Clearwater Revival (desfase -4.95 s)
+  actual          raíz  80.1  may/men  80.1  séptimas  80.1  mirex  80.1  cortes  52.7
+  btc-original    raíz  79.9  may/men  79.9  séptimas  79.9  mirex  79.9  cortes  74.0
+  pulsos-librosa  raíz  75.4  may/men  75.4  séptimas  75.4  mirex  75.4  cortes  60.9
+  anterior        raíz  78.5  may/men  78.5  séptimas  78.5  mirex  78.5  cortes  54.6
+  combinado       raíz  80.9  may/men  80.9  séptimas  80.9  mirex  80.9  cortes  56.3
+
+Come Together - The Beatles                    (desfase -0.70 s)
+  actual          raíz  96.3  may/men  77.7  séptimas  48.2  mirex  77.7  cortes  84.8
+  btc-original    raíz  95.2  may/men  78.8  séptimas  50.1  mirex  78.8  cortes  85.3
+  pulsos-librosa  raíz  96.4  may/men  78.3  séptimas  48.2  mirex  78.3  cortes  85.6
+  anterior        raíz  95.5  may/men  79.5  séptimas  50.8  mirex  79.5  cortes  87.3
+  combinado       raíz  95.8  may/men  80.8  séptimas  49.5  mirex  80.8  cortes  85.8
+
+Help! - The Beatles                            (desfase +0.50 s)
+  actual          raíz  95.8  may/men  94.1  séptimas  85.6  mirex  94.1  cortes  90.1
+  btc-original    raíz  96.3  may/men  94.5  séptimas  86.1  mirex  94.5  cortes  90.5
+  pulsos-librosa  raíz  90.6  may/men  88.9  séptimas  81.0  mirex  88.9  cortes  84.7
+  anterior        raíz  89.1  may/men  87.5  séptimas  80.1  mirex  87.5  cortes  84.6
+  combinado       raíz  96.7  may/men  94.9  séptimas  86.5  mirex  95.0  cortes  90.9
+
+We Are The Champions - Queen                   (desfase -2.20 s)  ** SOSPECHOSO, no entra en el promedio: desfase distinto en cada mitad (-2.35 / -1.70 s): otra edición o velocidad
+  actual          raíz  62.5  may/men  63.3  séptimas  51.1  mirex  56.6  cortes  70.9
+  btc-original    raíz  67.1  may/men  65.9  séptimas  49.6  mirex  58.7  cortes  75.3
+  pulsos-librosa  raíz  62.5  may/men  63.3  séptimas  51.1  mirex  56.6  cortes  70.9
+  anterior        raíz  67.1  may/men  65.9  séptimas  49.6  mirex  58.7  cortes  75.3
+  combinado       raíz  63.0  may/men  64.4  séptimas  49.5  mirex  56.5  cortes  70.8
+
+Beat It - Michael Jackson                      (desfase -0.40 s)
+  actual          raíz  89.0  may/men  80.2  séptimas  79.5  mirex  80.2  cortes  87.6
+  btc-original    raíz  92.0  may/men  81.6  séptimas  81.6  mirex  81.6  cortes  91.9
+  pulsos-librosa  raíz  88.5  may/men  79.6  séptimas  79.6  mirex  79.6  cortes  86.2
+  anterior        raíz  92.1  may/men  82.0  séptimas  82.0  mirex  82.0  cortes  91.7
+  combinado       raíz  90.6  may/men  81.1  séptimas  81.1  mirex  81.1  cortes  90.2
+
+With Or Without You - U2                       (desfase -0.10 s)
+  actual          raíz  84.0  may/men  85.5  séptimas  58.2  mirex  85.6  cortes  90.7
+  btc-original    raíz  84.3  may/men  84.3  séptimas  44.6  mirex  77.4  cortes  91.6
+  pulsos-librosa  raíz  83.8  may/men  85.3  séptimas  57.9  mirex  85.6  cortes  90.1
+  anterior        raíz  84.1  may/men  84.1  séptimas  44.3  mirex  77.4  cortes  91.0
+  combinado       raíz  84.7  may/men  85.5  séptimas  51.5  mirex  82.7  cortes  92.0
+
+Just The Way You Are - Billy Joel              (desfase +0.35 s)
+  actual          raíz  82.1  may/men  87.1  séptimas  66.6  mirex  86.5  cortes  80.4
+  btc-original    raíz  80.3  may/men  86.2  séptimas  68.6  mirex  83.9  cortes  81.8
+  pulsos-librosa  raíz  82.8  may/men  87.8  séptimas  67.1  mirex  86.5  cortes  82.7
+  anterior        raíz  80.9  may/men  87.0  séptimas  68.3  mirex  84.2  cortes  82.8
+  combinado       raíz  81.4  may/men  86.6  séptimas  68.1  mirex  84.3  cortes  81.5
+
+Goodbye Yellow Brick Road - Elton John         (desfase -0.85 s)
+  actual          raíz  91.1  may/men  91.1  séptimas  80.9  mirex  91.8  cortes  90.4
+  btc-original    raíz  91.4  may/men  91.4  séptimas  78.3  mirex  92.0  cortes  90.4
+  pulsos-librosa  raíz  91.8  may/men  91.7  séptimas  81.5  mirex  92.0  cortes  91.0
+  anterior        raíz  91.8  may/men  91.7  séptimas  77.6  mirex  92.3  cortes  90.6
+  combinado       raíz  91.4  may/men  91.4  séptimas  79.3  mirex  92.0  cortes  90.4
+
+(Sittin' On) The Dock Of The Bay - Otis Reddin (desfase -0.30 s)
+  actual          raíz  94.5  may/men  83.5  séptimas  83.5  mirex  83.5  cortes  96.1
+  btc-original    raíz  94.5  may/men  83.5  séptimas  83.5  mirex  83.5  cortes  96.1
+  pulsos-librosa  raíz  93.9  may/men  83.0  séptimas  83.0  mirex  83.0  cortes  94.3
+  anterior        raíz  93.9  may/men  83.0  séptimas  83.0  mirex  83.0  cortes  94.3
+  combinado       raíz  94.5  may/men  83.5  séptimas  83.5  mirex  83.5  cortes  96.1
+
+Higher Ground - Stevie Wonder                  (desfase +0.90 s)
+  actual          raíz  73.8  may/men  47.9  séptimas  44.6  mirex  77.0  cortes  47.8
+  btc-original    raíz  73.6  may/men  67.4  séptimas  51.4  mirex  70.3  cortes  65.1
+  pulsos-librosa  raíz  73.7  may/men  48.1  séptimas  44.9  mirex  76.8  cortes  46.2
+  anterior        raíz  72.8  may/men  66.4  séptimas  47.6  mirex  68.6  cortes  57.9
+  combinado       raíz  74.1  may/men  61.7  séptimas  57.2  mirex  75.5  cortes  52.8
+
+Every Little Thing She Does Is Magic - The Pol (desfase -0.20 s)
+  actual          raíz  68.7  may/men  76.7  séptimas  54.8  mirex  62.7  cortes  87.1
+  btc-original    raíz  68.6  may/men  77.0  séptimas  53.6  mirex  63.1  cortes  88.6
+  pulsos-librosa  raíz  67.2  may/men  75.2  séptimas  54.3  mirex  61.2  cortes  86.8
+  anterior        raíz  67.7  may/men  74.6  séptimas  52.7  mirex  61.9  cortes  86.8
+  combinado       raíz  69.8  may/men  78.5  séptimas  55.2  mirex  64.4  cortes  88.6
+
+Riders On The Storm - The Doors                (desfase -5.00 s)  ** SOSPECHOSO, no entra en el promedio: desfase distinto en cada mitad (-5.10 / -4.25 s): otra edición o velocidad
+  actual          raíz  64.5  may/men  61.5  séptimas  65.6  mirex  68.5  cortes  69.0
+  btc-original    raíz  58.7  may/men  60.4  séptimas  62.4  mirex  66.9  cortes  61.6
+  pulsos-librosa  raíz  59.6  may/men  61.4  séptimas  65.5  mirex  68.4  cortes  69.3
+  anterior        raíz  54.0  may/men  55.6  séptimas  56.8  mirex  62.3  cortes  58.8
+  combinado       raíz  64.9  may/men  66.8  séptimas  70.2  mirex  73.2  cortes  64.5
+
+Lovely Day - Bill Withers                      (desfase +0.65 s)  ** SOSPECHOSO, no entra en el promedio: desfase distinto en cada mitad (+0.30 / +1.10 s): otra edición o velocidad
+  actual          raíz  69.7  may/men  80.4  séptimas  76.5  mirex  75.3  cortes  82.4
+  btc-original    raíz  71.0  may/men  77.1  séptimas  70.7  mirex  76.1  cortes  81.7
+  pulsos-librosa  raíz  68.7  may/men  80.4  séptimas  76.6  mirex  74.0  cortes  82.5
+  anterior        raíz  70.8  may/men  77.4  séptimas  71.9  mirex  76.3  cortes  82.0
+  combinado       raíz  70.2  may/men  80.4  séptimas  79.4  mirex  75.2  cortes  82.2
+
+PROMEDIO de 13 temas de McGill Billboard (sirve para comparar variantes)
+  actual          raíz  83.4  may/men  79.1  séptimas  65.2  mirex  80.4  cortes  79.1
+  btc-original    raíz  82.7  may/men  79.9  séptimas  65.6  mirex  78.1  cortes  82.9
+  pulsos-librosa  raíz  82.9  may/men  78.6  séptimas  64.7  mirex  79.8  cortes  79.7
+  anterior        raíz  82.2  may/men  79.3  séptimas  64.7  mirex  77.5  cortes  80.2
+  combinado       raíz  83.0  may/men  79.9  séptimas  66.3  mirex  79.4  cortes  80.1

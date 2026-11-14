@@ -1,0 +1,19 @@
+# Maquinitabs con Docker:
+#   docker compose -f _herramientas/app/docker-compose.yml up -d --build
+# y abrir http://localhost:5055 (o http://<IP de esta compu>:5055 desde otro dispositivo de la red).
+#
+# CANCIONES = carpeta donde se guardan los temas (audio, pistas y análisis).
+# Por defecto ./canciones al lado de este archivo; para usar la carpeta de la banda:
+#   PowerShell:  $env:CANCIONES = "E:\Música\banda sin nombre"
+services:
+  maquinitabs:
+    build:
+      context: ..
+      dockerfile: app/Dockerfile
+    image: maquinitabs
+    container_name: maquinitabs
+    ports:
+      - "${PUERTO:-5055}:5055"
+    volumes:
+      - "${CANCIONES:-./canciones}:/canciones"
+    restart: unless-stopped

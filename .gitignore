@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+
+# audio y análisis de los temas (pesan GB y son de cada uno)
+app/canciones/
+pruebas/canciones/
+
+# lo que detectó cada variante: se regenera con evaluar.py (el informe sí viaja)
+pruebas/resultados/*
+!pruebas/resultados/informe.txt
