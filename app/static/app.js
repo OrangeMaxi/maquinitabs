@@ -1128,14 +1128,16 @@ ponerPanel(recordar('panel') ? recordar('panel') === 'fijo' : window.innerWidth 
 // en el clic (y no en el envío) para que suene siempre que se toca la locomotora; Enter en el campo también
 // dispara un clic en el botón
 $('.locomotora').addEventListener('click', () => silbato());
-// Silbato de vapor sintetizado: tres tubos afinados en acorde (como los silbatos de locomotora) con un
-// poco de vibrato, más el soplido del vapor (ruido filtrado). Dos pitadas: una corta y una larga.
+// Silbato de tren de madera sintetizado, afinado con la grabación de referencia de Maxi («Wooden Train
+// Whistle»): cuatro tubos casi pegados, Fa5–Sol5–La5–Si5 (683, 773, 874, 980 Hz), sonido de flauta (pocos
+// armónicos: onda triangular), arranca un poco abajo y sube, más el soplido (ruido alrededor de 1,5 kHz).
+// Dos pitadas: una corta y una larga.
 function silbato() {
   try {
     const ctx = ctxAudio();
     ctx.resume();
-    const sal = ctx.createGain(); sal.gain.value = 0.22; sal.connect(ctx.destination);
-    const filtro = ctx.createBiquadFilter(); filtro.type = 'lowpass'; filtro.frequency.value = 2200; filtro.connect(sal);
+    const sal = ctx.createGain(); sal.gain.value = 0.3; sal.connect(ctx.destination);
+    const filtro = ctx.createBiquadFilter(); filtro.type = 'lowpass'; filtro.frequency.value = 3500; filtro.connect(sal);
     const ruido = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     ruido.getChannelData(0).forEach((_, i, d) => { d[i] = Math.random() * 2 - 1; });
     const pitada = (t0, dur) => {
@@ -1145,18 +1147,18 @@ function silbato() {
       env.gain.setValueAtTime(1, t0 + dur - 0.12);
       env.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
       const vib = ctx.createOscillator(), vibG = ctx.createGain();
-      vib.frequency.value = 5.5; vibG.gain.value = 4; vib.connect(vibG); vib.start(t0); vib.stop(t0 + dur);
-      [392, 494, 587].forEach((f, k) => {               // Sol, Si, Re: a mitad de camino entre el agudo y el grave
+      vib.frequency.value = 5; vibG.gain.value = 5; vib.connect(vibG); vib.start(t0); vib.stop(t0 + dur);
+      [683, 773, 874, 980].forEach((f, k) => {          // Fa5, Sol5, La5, Si5 (como la referencia)
         const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = 'sawtooth';
-        o.frequency.setValueAtTime(f * 0.93, t0);          // arranca un poco abajo y sube, como el vapor
-        o.frequency.exponentialRampToValueAtTime(f, t0 + 0.12);
+        o.type = 'triangle';
+        o.frequency.setValueAtTime(f * 0.9, t0);           // arranca un poco abajo y sube, como el soplido
+        o.frequency.exponentialRampToValueAtTime(f, t0 + 0.15);
         vibG.connect(o.frequency);
-        g.gain.value = [0.18, 0.14, 0.11][k];
+        g.gain.value = [0.2, 0.22, 0.18, 0.13][k];
         o.connect(g).connect(env); o.start(t0); o.stop(t0 + dur);
       });
       const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), ng = ctx.createGain();
-      n.buffer = ruido; bp.type = 'bandpass'; bp.frequency.value = 1400; bp.Q.value = 0.8; ng.gain.value = 0.3;
+      n.buffer = ruido; bp.type = 'bandpass'; bp.frequency.value = 1550; bp.Q.value = 0.9; ng.gain.value = 0.22;
       n.connect(bp).connect(ng).connect(env); n.start(t0); n.stop(t0 + dur);
     };
     const t = ctx.currentTime + 0.03;
