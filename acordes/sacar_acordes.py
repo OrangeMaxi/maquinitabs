@@ -190,7 +190,24 @@ def pulsos_beat_this(y, sr):
         return None
     mejor = max(buenos, key=lambda r: r["parejo"])
     log(f"Beat This!: compás de {mejor['compas']} pulsos en el {100 * mejor['parejo']:.0f}% de los compases")
-    return {"pulsos": mejor["pulsos"], "compas": mejor["compas"], "unos": [r["unos"] for r in res]}
+    return {"pulsos": suavizar_pulsos(mejor["pulsos"]), "compas": mejor["compas"], "unos": [r["unos"] for r in res]}
+
+
+def suavizar_pulsos(b, vecinos=4, tope=0.03):
+    """Beat This! da los pulsos en cuadros de 20 ms: a 170 BPM eso es un 6 % de pulso y el metrónomo suena
+    renguito. Cada pulso pasa a la recta que mejor ajusta a sus vecinos (±4 pulsos), salvo que eso lo mueva
+    más de 30 ms (ahí hay un cambio de tempo o un rubato real, y se respeta)."""
+    b = np.asarray(b, dtype=float)
+    out = b.copy()
+    for i in range(len(b)):
+        a, z = max(0, i - vecinos), min(len(b), i + vecinos + 1)
+        if z - a < 5:
+            continue
+        k = np.arange(a, z)
+        m, c = np.polyfit(k, b[a:z], 1)
+        if abs(m * i + c - b[i]) < tope:
+            out[i] = m * i + c
+    return out
 
 
 def ritmo_en(y, sr, t_beats):
@@ -241,6 +258,8 @@ def analizar(wav, stems, compas, con_bajo=False, metricas=None, modelo=None, pul
         beats = np.unique(librosa.time_to_frames(bthis["pulsos"], sr=sr, hop_length=hop))
         tempo = float(60.0 / np.median(np.diff(bthis["pulsos"])))
     elif tempo < 70:  # evitar mitad de tempo
+        # (comparar con el tempo de la mezcla para detectar la mitad no sirve: en Can't Buy Me Love acierta,
+        # pero en Imagine las corcheas del piano dan el doble. La mitad de tempo la resuelve Beat This!)
         tempo2, beats2 = librosa.beat.beat_track(onset_envelope=env, sr=sr, hop_length=hop, start_bpm=tempo * 2)
         if float(np.atleast_1d(tempo2)[0]) > 90:
             tempo, beats = float(np.atleast_1d(tempo2)[0]), beats2
@@ -249,7 +268,17 @@ def analizar(wav, stems, compas, con_bajo=False, metricas=None, modelo=None, pul
     if stems:
         beats = extender_pulsos(np.asarray(beats), librosa.onset.onset_strength(y=mezcla, sr=sr, hop_length=hop),
                                 librosa.feature.rms(y=mezcla, hop_length=hop)[0])
-    t_beats = librosa.frames_to_time(beats, sr=sr, hop_length=hop)
+    def exactos(t):
+        # los cuadros de librosa son de 23 ms: a 170 BPM eso desparejaría el metrónomo. Donde el pulso es
+        # de Beat This! se usa su tiempo exacto (los agregados por extender_pulsos quedan como están).
+        if not bthis or len(bthis["pulsos"]) < 2:
+            return t
+        bp = np.asarray(bthis["pulsos"], dtype=float)
+        j = np.clip(np.searchsorted(bp, t), 1, len(bp) - 1)
+        cerca = np.where(np.abs(bp[j - 1] - t) < np.abs(bp[j] - t), bp[j - 1], bp[j])
+        return np.where(np.abs(cerca - t) < 0.03, cerca, t)
+
+    t_beats = exactos(librosa.frames_to_time(beats, sr=sr, hop_length=hop))
     if len(t_beats) > 2:
         tempo = float(60.0 / np.median(np.diff(t_beats)))
 
@@ -267,7 +296,7 @@ def analizar(wav, stems, compas, con_bajo=False, metricas=None, modelo=None, pul
     cb = librosa.util.sync(chroma, bounds, aggregate=np.median)
     cbb = librosa.util.sync(chroma_bajo, bounds, aggregate=np.median)
     eb = librosa.util.sync(rms_arm[None, :], bounds, aggregate=np.mean)[0]
-    t_ini = librosa.frames_to_time(bounds[:-1], sr=sr, hop_length=hop)
+    t_ini = exactos(librosa.frames_to_time(bounds[:-1], sr=sr, hop_length=hop))
     n = cb.shape[1]
 
     # ---- tonalidad

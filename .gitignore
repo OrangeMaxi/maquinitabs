@@ -8,3 +8,6 @@ pruebas/canciones/
 # lo que detectó cada variante: se regenera con evaluar.py (el informe sí viaja)
 pruebas/resultados/*
 !pruebas/resultados/informe.txt
+
+# patches y grabaciones de la pedalera (no son parte de la app)
+presets/

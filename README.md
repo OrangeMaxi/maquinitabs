@@ -108,12 +108,15 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
 1. Pegá un link de YouTube arriba y tocá **Analizar**. Una canción tarda entre 5 y 10 minutos la primera vez
    (casi todo es la separación en pistas; depende del procesador).
 2. Cuando termina se abre sola. A la izquierda están las pistas (M = mutear, S = solo, volumen) y la lista
-   de canciones.
+   de canciones. La última pista es el **metrónomo**: M lo prende o apaga, y tiene su propio volumen.
 3. Pestañas:
-   - **Acordes y estructura**: la hoja, con diagramas de guitarra o teclado. Clic en un compás para saltar ahí.
+   - **Acordes y estructura**: la hoja de guitarra o de piano, con diagramas. Muestra solo lo que toca ese
+     instrumento, sacado de su propia pista: el acorde que forman sus notas, ♪ si toca una línea o notas
+     sueltas (están en la partitura) y – si no suena. Nunca se rellena con lo que toca el bajo u otro
+     instrumento. La armonía completa del tema se ve en **Editar hoja**. Clic en un compás para saltar ahí.
    - **Guitarra / Piano / Bajo / Voz**: partitura (y tablatura en guitarra y bajo).
    - **Improvisación**: escalas recomendadas e ideas de arreglo por sección.
-4. Abajo: reproducir (barra espaciadora), metrónomo, cuenta previa, repetir sección y transporte de tonalidad
+4. Abajo: reproducir (barra espaciadora), cuenta previa, repetir sección y transporte de tonalidad
    (cambia el audio y toda la notación).
 5. **Imprimir** saca la vista actual en papel o PDF.
 
