@@ -1,6 +1,6 @@
 # torch y torchaudio (CPU) se instalan aparte en el Dockerfile, desde el índice de PyTorch
 demucs==4.0.1
-torchcodec==0.9.1
+# (sin torchcodec: las pistas se guardan con soundfile en separar_demucs.py; torchcodec no existe para ARM)
 librosa==0.11.0
 numpy==2.4.1
 scipy==1.17.1

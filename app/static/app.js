@@ -65,6 +65,27 @@ async function sondear() {
   if (ts.some((t) => t.estado === 'en curso' || t.estado === 'en cola')) sondeo = setTimeout(sondear, 1500);
 }
 
+// subir un archivo de audio en vez de pegar un link (en un servidor en internet YouTube suele bloquear las descargas)
+$('#btn-subir').onclick = () => $('#archivo').click();
+$('#archivo').onchange = async () => {
+  const f = $('#archivo').files[0];
+  if (!f) return;
+  const datos = new FormData();
+  datos.append('archivo', f);
+  $('#btn-subir').disabled = true;
+  $('#trabajos').insertAdjacentHTML('afterbegin', `<div class="trabajo" id="subiendo"><b>${esc(f.name)}</b><span>Subiendo…</span></div>`);
+  try {
+    const r = await fetch('/api/canciones/subir', { method: 'POST', body: datos });
+    const d = await r.json().catch(() => ({ error: r.status === 413 ? 'El archivo es muy grande (máximo 300 MB).' : 'No se pudo subir.' }));
+    if (!r.ok) throw new Error(d.error || 'No se pudo subir.');
+    silbato();
+    seguir(d);
+  } catch (e) { alert(e.message); } finally {
+    $('#btn-subir').disabled = false;
+    $('#archivo').value = '';
+    const s = $('#subiendo'); if (s) s.remove();
+  }
+};
 $('#form-url').onsubmit = async (ev) => {
   ev.preventDefault();
   try {

@@ -1,0 +1,35 @@
+# Maquinitabs en un servidor en internet (Oracle Cloud Always Free u otro), con HTTPS y contraseña.
+# No se usa a mano: lo arma y lo arranca instalar.sh (que también escribe el Caddyfile con tu usuario).
+#
+#   maquinitabs: la app, solo accesible desde adentro (no publica su puerto a internet)
+#   caddy:       la puerta de entrada: certificado HTTPS automático + usuario y contraseña
+services:
+  maquinitabs:
+    build:
+      context: ..
+      dockerfile: app/Dockerfile
+    image: maquinitabs
+    container_name: maquinitabs
+    restart: unless-stopped
+    expose:
+      - "5055"
+    volumes:
+      - "./canciones:/canciones"
+
+  caddy:
+    image: caddy:2.8
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./Caddyfile:/etc/caddy/Caddyfile:ro"
+      - "caddy_datos:/data"
+      - "caddy_config:/config"
+    depends_on:
+      - maquinitabs
+
+volumes:
+  caddy_datos:
+  caddy_config:

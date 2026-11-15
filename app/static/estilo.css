@@ -33,6 +33,8 @@ body.trabajando .engranajes .eng-chico { animation: giro-chico-ya 2.5s linear in
 #form-url { display: flex; gap: 8px; flex: 1; max-width: 760px; align-items: center; }
 #form-url input { flex: 1; min-width: 0; background: var(--fondo); border: 1px solid var(--borde); border-radius: 6px; padding: 7px 12px; }
 /* botón Analizar = locomotora */
+.subir { display: grid; place-items: center; padding: 6px 8px; background: transparent; color: var(--tenue); }
+.subir:hover { color: var(--texto); }
 /* solo el ícono, sin caja: el dibujo es el botón */
 button.locomotora { padding: 0; line-height: 0; border: 0; background: none; border-radius: 6px; }
 button.locomotora:hover { background: none; filter: brightness(1.15); }

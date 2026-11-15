@@ -84,6 +84,11 @@ docker load -i maquinitabs.tar
 docker compose -f app/docker-compose.yml up -d
 ```
 
+### En un servidor en internet (para usarla desde cualquier lado)
+
+La carpeta `servidor/` la deja en un servidor con HTTPS y usuario y contraseña, por ejemplo en el plan
+gratuito de Oracle Cloud. Paso a paso en [servidor/GUIA-ORACLE.md](servidor/GUIA-ORACLE.md).
+
 ## Opción 2: sin Docker (Windows)
 
 Hace falta **Python 3.11** y **ffmpeg** en el PATH. Desde la carpeta `_herramientas`:
@@ -105,7 +110,8 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
 
 ## Cómo se usa
 
-1. Pegá un link de YouTube arriba y tocá **Analizar**. Una canción tarda entre 5 y 10 minutos la primera vez
+1. Pegá un link de YouTube arriba y tocá **Analizar** (la locomotora), o subí un archivo de audio con la
+   flecha de al lado (mp3, m4a, wav, flac…; nombre ideal «Artista - Tema.mp3»). Una canción tarda entre 5 y 10 minutos la primera vez
    (casi todo es la separación en pistas; depende del procesador).
 2. Cuando termina se abre sola. A la izquierda están las pistas (M = mutear, S = solo, volumen) y la lista
    de canciones. El botón de arriba a la izquierda muestra u oculta ese panel (oculto, la hoja ocupa toda

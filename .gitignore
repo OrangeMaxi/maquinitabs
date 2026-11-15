@@ -11,3 +11,7 @@ pruebas/resultados/*
 
 # patches y grabaciones de la pedalera (no son parte de la app)
 presets/
+
+# servidor: temas y Caddyfile (tiene el usuario y la contraseña cifrada)
+servidor/canciones/
+servidor/Caddyfile

@@ -19,6 +19,7 @@ RAIZ = os.environ.get("CANCIONES_RAIZ") or os.path.dirname(os.path.dirname(AQUI)
 PUERTO = int(os.environ.get("PORT", 5055))
 
 app = Flask(__name__, static_folder=os.path.join(AQUI, "static"), static_url_path="")
+app.config["MAX_CONTENT_LENGTH"] = 300 * 1024 * 1024        # archivos subidos: hasta 300 MB
 
 trabajos = {}            # id -> {id, titulo, etapa, pct, estado, cancion, error}
 cola = queue.Queue()
@@ -50,6 +51,15 @@ def trabajador():
             base = t.get("base")
             if t.get("url"):
                 base = analisis.descargar(t["url"], RAIZ, progreso)
+                t["cancion"] = os.path.basename(base)
+                t["titulo"] = t["cancion"]
+                analisis.separar(base, progreso)
+            elif t.get("subido"):                    # archivo subido: convertir y separar
+                progreso("Convirtiendo el audio…", 3)
+                try:
+                    base = analisis.importar(t["subido"], t["archivo"], RAIZ)
+                finally:
+                    os.remove(t["subido"])
                 t["cancion"] = os.path.basename(base)
                 t["titulo"] = t["cancion"]
                 analisis.separar(base, progreso)
@@ -110,6 +120,24 @@ def nueva():
     if not re.match(r"^https?://([\w-]+\.)?(youtube\.com|youtu\.be)/", url):
         return jsonify({"error": "Pegá un link de YouTube (youtube.com o youtu.be)."}), 400
     return jsonify(publico(encolar(url=url, titulo=url)))
+
+
+FORMATOS = (".mp3", ".m4a", ".aac", ".wav", ".flac", ".ogg", ".opus", ".webm", ".mp4")
+
+
+@app.post("/api/canciones/subir")
+def subir():
+    """Tema desde un archivo de audio (en vez de un link de YouTube)."""
+    f = request.files.get("archivo")
+    if not f or not f.filename:
+        return jsonify({"error": "Elegí un archivo de audio."}), 400
+    nombre = os.path.basename(f.filename)
+    if not nombre.lower().endswith(FORMATOS):
+        return jsonify({"error": "Formato no soportado. Probá con mp3, m4a, wav, flac u ogg."}), 400
+    os.makedirs(os.path.join(RAIZ, "_subidas"), exist_ok=True)
+    tmp = os.path.join(RAIZ, "_subidas", uuid.uuid4().hex + os.path.splitext(nombre)[1].lower())
+    f.save(tmp)
+    return jsonify(publico(encolar(subido=tmp, archivo=nombre, titulo=os.path.splitext(nombre)[0])))
 
 
 @app.post("/api/canciones/<cid>/analizar")

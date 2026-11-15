@@ -98,6 +98,25 @@ def descargar(url, raiz, progreso=_noop):
     return base
 
 
+def importar(origen, nombre_archivo, raiz, titulo=None, artista=None):
+    """Tema subido como archivo (mp3, m4a, wav, flac, ogg…) en vez de bajado de YouTube: hace falta en un
+    servidor en internet, porque YouTube suele bloquear las descargas desde datacenters.
+    Título y artista: los que se pasen o, si no, del nombre del archivo («Artista - Tema.mp3»).
+    Convierte a WAV con ffmpeg y devuelve la carpeta del tema."""
+    if not (titulo and artista):
+        t, a = titulo_y_artista(None, os.path.splitext(nombre_archivo)[0], None, "")
+        titulo, artista = titulo or t, artista or (a if a != "Desconocido" else "Sin artista")
+    titulo, artista = sa.limpiar(titulo), sa.limpiar(artista)
+    base = os.path.join(raiz, f"{titulo} - {artista}")
+    os.makedirs(os.path.join(base, "audio"), exist_ok=True)
+    os.makedirs(os.path.join(base, "analisis"), exist_ok=True)
+    wav = os.path.join(base, "audio", f"{titulo}.wav")
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", origen, "-vn", "-ar", "44100", "-ac", "2", wav], check=True)
+    with open(os.path.join(base, "analisis", "meta.json"), "w", encoding="utf-8") as f:
+        json.dump({"titulo": titulo, "artista": artista, "fuente": ""}, f, ensure_ascii=False)
+    return base
+
+
 # ---------------------------------------------------------------- pistas
 def mezcla_de(base):
     carpeta = os.path.join(base, "audio")
@@ -136,7 +155,8 @@ def separar(base, progreso=_noop):
     modelos = os.path.join(os.path.dirname(AQUI), "modelos")
     if "TORCH_HOME" not in entorno and os.path.isdir(os.path.join(modelos, "hub", "checkpoints")):
         entorno["TORCH_HOME"] = modelos
-    p = subprocess.Popen([sys.executable, "-m", "demucs", "-n", "htdemucs_6s", "-o", tmp, wav],
+    # separar_demucs.py = el comando de demucs pero guardando con soundfile (anda también en ARM)
+    p = subprocess.Popen([sys.executable, os.path.join(AQUI, "separar_demucs.py"), wav, tmp, "htdemucs_6s"],
                          stderr=subprocess.PIPE, stdout=subprocess.DEVNULL, env=entorno)
     buf, cola = b"", b""
     while True:
