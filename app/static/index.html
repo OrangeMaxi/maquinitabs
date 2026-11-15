@@ -8,15 +8,36 @@
 </head>
 <body>
   <header class="barra-sup">
-    <div class="marca">♪ Maquini<span>tabs</span></div>
+    <button id="btn-panel" class="btn-panel" title="Mostrar u ocultar el panel de pistas y canciones" aria-label="Panel lateral">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
+    </button>
+    <div class="marca">
+      <svg class="engranajes" viewBox="0 0 40 30" width="40" height="30" aria-hidden="true">
+        <g class="eng-grande"><path data-engranaje="12.5,15,11,8.6,10"/><circle cx="12.5" cy="15" r="3.4"/></g>
+        <g class="eng-chico"><path data-engranaje="29.1,15,7.4,5.6,7"/><circle cx="29.1" cy="15" r="2.2"/></g>
+      </svg>
+      <b>Maquini<span>tabs</span></b>
+    </div>
     <form id="form-url">
       <input id="url" type="url" placeholder="Pegá un link de YouTube de una canción…" autocomplete="off" required>
-      <button type="submit" class="primario">Analizar</button>
+      <button type="submit" class="primario locomotora" title="Analizar" aria-label="Analizar">
+        <svg viewBox="0 0 64 36" width="58" height="33" aria-hidden="true">
+          <g class="humo"><circle cx="15" cy="7" r="3"/><circle cx="10" cy="4" r="2.2"/><circle cx="5.5" cy="2.6" r="1.6"/></g>
+          <path class="loco" d="M12 12h6v6h-6zM10 18h28v-9h10v9h6l4 6v4H8v-4z"/>
+          <rect class="ventana" x="41" y="11.5" width="5" height="4.5" rx=".8"/>
+          <path class="loco" d="M57 28l5 4H54z"/>
+          <g class="ruedas"><circle cx="16" cy="30" r="4"/><circle cx="28" cy="30" r="4"/><circle cx="44" cy="30" r="5"/></g>
+          <path class="biela" d="M16 30h28"/>
+        </svg>
+      </button>
     </form>
   </header>
 
   <div class="cuerpo">
-    <aside>
+    <aside id="panel">
+      <div class="panel-cabeza">
+        <button id="btn-fijar" class="secundario" title="Fijar el panel al costado o dejarlo flotando sobre la hoja">Fijar panel</button>
+      </div>
       <div id="trabajos"></div>
       <div id="panel-pistas" hidden>
         <h4>Pistas <small id="estado-audio"></small></h4>
@@ -54,13 +75,20 @@
   </div>
 
   <footer class="reproductor" id="reproductor" hidden>
+    <button id="btn-inicio" class="inicio" title="Volver al principio (Inicio)" aria-label="Volver al principio">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="4" y="5" width="2.6" height="14" rx="1"/><path d="M20 5.5v13a1 1 0 0 1-1.5.9L8.4 13a1.2 1.2 0 0 1 0-2l10.1-6.4a1 1 0 0 1 1.5.9z"/></svg>
+    </button>
     <button id="btn-play" class="play" title="Reproducir / pausar (espacio)">▶</button>
     <div class="tiempo"><span id="t-actual">0:00</span> / <span id="t-total">0:00</span></div>
     <input id="barra" type="range" min="0" max="1000" value="0" step="1">
     <div class="acorde-actual"><small id="seccion-actual">&nbsp;</small><b id="acorde-actual">–</b></div>
     <div class="opciones">
       <label title="Cuenta un compás antes de arrancar"><input type="checkbox" id="cuenta"> Cuenta previa</label>
-      <label title="Repite la sección que está sonando"><input type="checkbox" id="repetir"> Repetir sección</label>
+    </div>
+    <div class="bucle" title="Repite del compás «desde» al compás «hasta» (incluido)">
+      <label><input type="checkbox" id="repetir"> Repetir</label>
+      <span>desde <select id="bucle-ini"></select></span>
+      <span>hasta <select id="bucle-fin"></select></span>
     </div>
     <div class="transporte" title="Transporta el audio y toda la notación">
       <button id="st-menos">−</button>

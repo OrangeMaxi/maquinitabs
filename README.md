@@ -108,7 +108,8 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
 1. Pegá un link de YouTube arriba y tocá **Analizar**. Una canción tarda entre 5 y 10 minutos la primera vez
    (casi todo es la separación en pistas; depende del procesador).
 2. Cuando termina se abre sola. A la izquierda están las pistas (M = mutear, S = solo, volumen) y la lista
-   de canciones. La última pista es el **metrónomo**: M lo prende o apaga, y tiene su propio volumen.
+   de canciones. El botón de arriba a la izquierda oculta ese panel (para ver la hoja entera en una tablet)
+   o lo muestra flotando sobre la hoja; **Fijar panel** lo deja al costado. La app recuerda la elección. La última pista es el **metrónomo**: M lo prende o apaga, y tiene su propio volumen.
 3. Pestañas:
    - **Acordes y estructura**: la hoja de guitarra o de piano, con diagramas. Muestra solo lo que toca ese
      instrumento, sacado de su propia pista: el acorde que forman sus notas, ♪ si toca una línea o notas
@@ -120,7 +121,9 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
      de esa grabación, la pista toma ese nombre (p. ej. «Sintetizador, saxo y trompeta»); si solo están los
      del disco, se mencionan como referencia. Sin internet (o con `SIN_INTERNET=1`) queda como «Otros».
    - **Improvisación**: escalas recomendadas e ideas de arreglo por sección.
-4. Abajo: reproducir (barra espaciadora), cuenta previa, repetir sección y transporte de tonalidad
+4. Abajo: volver al principio (tecla Inicio), reproducir (barra espaciadora), cuenta previa, **repetir**
+   (elegís desde qué compás hasta cuál; al prenderlo arranca con la sección que está sonando, y el tramo
+   queda marcado en la hoja) y transporte de tonalidad
    (cambia el audio y toda la notación).
 5. **Imprimir** saca la vista actual en papel o PDF.
 

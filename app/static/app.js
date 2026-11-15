@@ -47,6 +47,7 @@ async function sondear() {
   clearTimeout(sondeo);
   const ts = await api('trabajos').catch(() => []);
   const enCola = ts.filter((t) => t.estado === 'en cola').length;
+  document.body.classList.toggle('trabajando', ts.some((t) => t.estado === 'en curso' || t.estado === 'en cola'));
   $('#trabajos').innerHTML = ts.filter((t) => t.estado === 'en curso' || t.estado === 'error').map((t) => `
     <div class="trabajo ${t.estado === 'error' ? 'error' : ''}">
       <b>${esc(t.titulo || '')}</b>
@@ -76,7 +77,8 @@ $('#form-url').onsubmit = async (ev) => {
 async function abrir(id) {
   pausar();
   const c = await api('canciones/' + encodeURIComponent(id));
-  Object.assign(E, { id, st: 0, escala: 0, mute: {}, solo: {}, vol: {}, sel: -1 });
+  Object.assign(E, { id, st: 0, escala: 0, mute: {}, solo: {}, vol: {}, sel: -1, bucle: null });
+  $('#repetir').checked = false;
   poner(c);
   c.pistas.forEach((p) => { E.vol[p.id] = 1; });
   // el metrónomo es una pista más del mezclador; prendido/apagado y volumen se recuerdan entre temas
@@ -97,6 +99,7 @@ function poner(c) {
   if (!c.base) c.base = { acordes: c.compases.flatMap((x) => x.acordes.flatMap(([a, n]) => Array(n).fill(a))) };
   Object.assign(E, { c, compasActual: -1, seccionBucle: null, propios: null });
   E.unos = new Set(c.compases.filter((x) => !x.anacrusa).map((x) => x.beat));   // pulsos que son el "1"
+  llenarBucle();
 }
 
 const ton = () => T.tonalidad(E.c.tonalidad, E.st);
@@ -277,9 +280,22 @@ function ir(t) {
   E.pararEn = null;
   pausar();
   A.pos = Math.max(0, Math.min(E.c.duracion, t));
-  if (era) tocar(true);          // al saltar o repetir una sección no se vuelve a contar
+  const b = repitiendo();
+  saltoManual = !!(b && A.pos >= finCompas(b.fin));   // fue más allá del tramo a repetir (clic en otro compás)
+  if (era) tocar(true);         // al saltar o repetir una sección no se vuelve a contar
   refrescar(true);
 }
+// íconos de las pistas (trazo con el color de la pista)
+const ICONOS = {
+  vocals: '<svg viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21.5M8.5 21.5h7"/></svg>',
+  guitar: '<svg viewBox="0 0 24 24"><path d="M13.6 10.4 20 4"/><path d="M18.6 2.6l2.8 2.8"/><path d="M10.4 8.6c1.6-.4 3.3.4 3.6 1.9.3 1.3-.6 2.2-1.2 2.9.9.6 1.4 1.7 1.2 2.9-.4 2.8-3.6 4.6-6.6 3.8-3.4-.9-5.1-4.6-3.6-7.6.8-1.5 2.1-2.4 3.4-2.6.8-.1 1.4-1 3.2-1.3z"/><circle cx="8.8" cy="15.2" r="1.3"/></svg>',
+  piano: '<svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="1.5"/><path d="M7.25 12.5V19M12 12.5V19M16.75 12.5V19"/><path d="M6 5v7.5h2.5V5M10.75 5v7.5h2.5V5M15.5 5v7.5H18V5" fill="currentColor"/></svg>',
+  bass: '<svg viewBox="0 0 24 24"><path d="M11.6 12.4 21 3"/><path d="M19.6 1.6l2.8 2.8M18 4.6l1.4 1.4"/><path d="M8.6 10.6c1.4-.3 2.9.4 3.1 1.7.2 1.1-.5 1.9-1 2.5.8.5 1.2 1.5 1 2.5-.3 2.5-3.1 4-5.7 3.3-2.9-.8-4.4-4-3.1-6.6.7-1.3 1.8-2.1 2.9-2.3.7-.1 1.2-.9 2.8-1.1z"/></svg>',
+  drums: '<svg viewBox="0 0 24 24"><path d="M4 20 17.5 6.5M20 20 6.5 6.5"/><circle cx="18.6" cy="5.4" r="1.6" fill="currentColor"/><circle cx="5.4" cy="5.4" r="1.6" fill="currentColor"/><ellipse cx="12" cy="18.5" rx="7" ry="2.3"/></svg>',
+  otros: '<svg viewBox="0 0 24 24"><path d="M2.5 11h3v2h-3zM5.5 12h8.5"/><path d="M14 9.5 21.5 6v12L14 14.5z"/><path d="M8 12V9M10.5 12V9M13 12V9"/><path d="M7.5 15.5c1.5 1.6 4.5 1.6 6 0"/></svg>',
+  other: '<svg viewBox="0 0 24 24"><path d="M9 18V6l11-2.5v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="15.5" r="2.5"/></svg>',
+  metro: '<svg viewBox="0 0 24 24"><path d="M9.5 3h5l4 18h-13z"/><path d="M6.5 16.5h11M12 16.5 17 6"/><circle cx="15.6" cy="9" r="1.2" fill="currentColor"/></svg>',
+};
 function recordar(clave, valor) {
   try {
     if (valor === undefined) return localStorage.getItem('maquinitabs.' + clave);
@@ -305,7 +321,7 @@ function aplicarMezcla() {
 function pintarMezclador() {
   const fila = (id, nombre, color, extra, vol) => `
     <div class="pista" data-id="${id}">
-      <i style="background:${color}"></i>
+      <span class="icono" style="color:${color}" aria-hidden="true">${ICONOS[id] || ICONOS.otros}</span>
       <div class="nombre">${nombre}${extra}</div>
       <button class="m${E.mute[id] ? ' on' : ''}" title="${id === 'metro' ? 'Prender o apagar el metrónomo' : 'Mutear'}">M</button><button class="s" title="Solo">S</button>
       <input type="range" min="0" max="1.5" step="0.01" value="${vol}" title="Volumen">
@@ -346,6 +362,7 @@ function pintar() {
   ({ acordes: vistaAcordes, guitarra: () => vistaPartitura('guitarra'), piano: () => vistaPartitura('piano'), otros: () => vistaPartitura('otros'), bajo: () => vistaPartitura('bajo'), voz: () => vistaPartitura('voz'), impro: vistaImpro })[E.vista]($('#contenido'));
   v.scrollTop = arriba;
   refrescar(true);
+  marcarBucle();
 }
 function cabecera() {
   const c = E.c;
@@ -999,12 +1016,8 @@ function refrescar(forzar) {
   const i = compasEn(t);
   const c = E.c.compases[i];
   const s = seccionDe(i);
-  if ($('#repetir').checked && A.tocando && s && E.seccionBucle && E.seccionBucle !== s && t > E.c.compases[E.seccionBucle.ini].t) { ir(E.c.compases[E.seccionBucle.ini].t); return; }
-  if (A.tocando && t >= E.c.duracion - 0.05) {
-    if ($('#repetir').checked && E.seccionBucle) { ir(E.c.compases[E.seccionBucle.ini].t); return; }
-    pausar(); A.pos = 0;
-  }
-  if (!$('#repetir').checked || !E.seccionBucle) E.seccionBucle = s;
+  if (vigilarBucle()) return;
+  if (A.tocando && t >= E.c.duracion - 0.05) { pausar(); A.pos = 0; }
   const a = nom(acordeEn(i, t));
   if (a !== E.acordeActual || forzar) {
     E.acordeActual = a;
@@ -1034,15 +1047,104 @@ function refrescar(forzar) {
 let arrastrando = false;
 $('#btn-play').onclick = () => { E.pararEn = null; if (A.tocando) pausar(); else tocar(); };
 $('#barra').oninput = () => { arrastrando = true; $('#t-actual').textContent = mmss(($('#barra').value / 1000) * E.c.duracion); };
-$('#barra').onchange = () => { arrastrando = false; ir(($('#barra').value / 1000) * E.c.duracion); };
+$('#barra').onchange = () => {
+  arrastrando = false;
+  const t = ($('#barra').value / 1000) * E.c.duracion, b = repitiendo();
+  saltoManual = !!(b && t >= finCompas(b.fin));      // saltó más allá del tramo a repetir: se lo deja seguir
+  ir(t);
+};
 ['cuenta'].forEach((id) => {
   const el = $('#' + id);
   el.checked = recordar(id) === '1';
   el.onchange = () => { recordar(id, el.checked ? '1' : '0'); };
 });
-$('#repetir').onchange =() => { E.seccionBucle = seccionDe(compasEn(tiempo())); };
+// ----------------------------------------------------------------- repetir desde / hasta
+const repitiendo = () => ($('#repetir').checked && E.bucle ? E.bucle : null);
+// al llegar al final del compás «hasta» vuelve al «desde». Corre con su propio reloj (no solo con el
+// refresco de pantalla, que el navegador frena si la pestaña no está a la vista). Si uno salta a mano
+// más allá del tramo, no lo trae de vuelta.
+let saltoManual = false;
+function vigilarBucle() {
+  const b = repitiendo();
+  if (!b || !A.tocando || !E.c) return false;
+  const t = tiempo(), fin = Math.min(finCompas(b.fin), E.c.duracion - 0.05);
+  if (t < fin - 0.01) { saltoManual = false; return false; }
+  if (saltoManual) return false;
+  ir(E.c.compases[b.ini].t);
+  return true;
+}
+setInterval(vigilarBucle, 30);
+function llenarBucle() {                // un <option> por compás, agrupados por sección
+  const op = E.c.secciones.map((s) => `<optgroup label="${esc(s.nombre)}">${
+    Array.from({ length: s.fin - s.ini }, (_, j) => s.ini + j).map((i) => `<option value="${i}">${esc(s.nombre)} · c. ${i + 1}</option>`).join('')}</optgroup>`).join('');
+  $('#bucle-ini').innerHTML = op; $('#bucle-fin').innerHTML = op;
+  const n = E.c.compases.length;
+  if (!E.bucle || E.bucle.fin >= n) { const s = seccionDe(compasEn(A.pos)) || { ini: 0, fin: n }; E.bucle = { ini: s.ini, fin: s.fin - 1 }; }
+  $('#bucle-ini').value = E.bucle.ini; $('#bucle-fin').value = E.bucle.fin;
+  marcarBucle();
+}
+function marcarBucle() {
+  const b = repitiendo();
+  $('.bucle').classList.toggle('on', !!b);
+  $$('.en-bucle[data-c]').forEach((d) => d.classList.remove('en-bucle'));
+  if (b) $$('[data-c]').forEach((d) => { const i = +d.dataset.c; if (i >= b.ini && i <= b.fin) d.classList.add('en-bucle'); });
+}
+function cambiarBucle(cual) {
+  let ini = +$('#bucle-ini').value, fin = +$('#bucle-fin').value;
+  if (fin < ini) { if (cual === 'ini') fin = ini; else ini = fin; }   // «hasta» nunca antes que «desde»
+  E.bucle = { ini, fin };
+  $('#bucle-ini').value = ini; $('#bucle-fin').value = fin;
+  if (!$('#repetir').checked) { $('#repetir').checked = true; }       // elegir un tramo ya lo activa
+  marcarBucle();
+  const t = tiempo();
+  if (t < E.c.compases[ini].t - 0.01 || t >= finCompas(fin)) ir(E.c.compases[ini].t);
+}
+$('#bucle-ini').onchange = () => cambiarBucle('ini');
+$('#bucle-fin').onchange = () => cambiarBucle('fin');
+$('#repetir').onchange = () => {
+  if ($('#repetir').checked) {          // al prender, por defecto la sección que está sonando
+    const s = seccionDe(compasEn(tiempo()));
+    if (s) { E.bucle = { ini: s.ini, fin: s.fin - 1 }; $('#bucle-ini').value = s.ini; $('#bucle-fin').value = s.fin - 1; }
+  }
+  marcarBucle();
+};
+
+// ----------------------------------------------------------------- volver al principio
+$('#btn-inicio').onclick = () => { E.pararEn = null; ir(0); $('#vista').scrollTo({ top: 0 }); };
+
+// ----------------------------------------------------------------- panel lateral: fijo, oculto o flotante
+function ponerPanel(modo) {             // 'fijo' | 'oculto' | 'flotante'
+  document.body.classList.toggle('panel-oculto', modo === 'oculto');
+  document.body.classList.toggle('panel-flotante', modo === 'flotante');
+  $('#btn-panel').classList.toggle('on', modo !== 'oculto');
+  $('#btn-fijar').textContent = modo === 'fijo' ? 'Ocultar panel' : 'Fijar panel';
+  if (modo !== 'flotante') recordar('panel', modo);
+  if (E.c && E.vista in PARTITURAS) pintar();           // la partitura se re-acomoda al ancho nuevo
+}
+const modoPanel = () => (document.body.classList.contains('panel-flotante') ? 'flotante'
+  : document.body.classList.contains('panel-oculto') ? 'oculto' : 'fijo');
+$('#btn-panel').onclick = (ev) => { ev.stopPropagation(); ponerPanel(modoPanel() === 'oculto' ? 'flotante' : 'oculto'); };
+$('#btn-fijar').onclick = () => ponerPanel(modoPanel() === 'fijo' ? 'oculto' : 'fijo');
+document.addEventListener('click', (ev) => {        // el flotante se cierra al tocar la hoja
+  if (modoPanel() === 'flotante' && !ev.target.closest('#panel') && !ev.target.closest('#btn-panel')) ponerPanel('oculto');
+});
+// por defecto: fijo en pantallas anchas, oculto en tablets y celulares
+ponerPanel(recordar('panel') || (window.innerWidth >= 1100 ? 'fijo' : 'oculto'));
+
+// ----------------------------------------------------------------- engranajes del logo
+$$('[data-engranaje]').forEach((p) => {
+  const [cx, cy, re, ri, n] = p.dataset.engranaje.split(',').map(Number);
+  const pts = [];
+  for (let k = 0; k < n; k++) {         // cada diente: sube, meseta, baja, valle
+    const a = (k / n) * 2 * Math.PI, d = (2 * Math.PI) / n;
+    [[ri, 0], [re, 0.18], [re, 0.42], [ri, 0.6]].forEach(([r, f]) => pts.push([cx + r * Math.cos(a + f * d), cy + r * Math.sin(a + f * d)]));
+  }
+  p.setAttribute('d', 'M' + pts.map(([x, y]) => `${x.toFixed(2)} ${y.toFixed(2)}`).join('L') + 'Z');
+});
 document.addEventListener('keydown', (ev) => {
   if (ev.code === 'Space' && E.c && !/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName)) { ev.preventDefault(); $('#btn-play').click(); }
+  if (ev.code === 'Home' && E.c && !/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName)) { ev.preventDefault(); $('#btn-inicio').click(); }
+  if (ev.code === 'Escape' && modoPanel() === 'flotante') ponerPanel('oculto');
 });
 $$('#pestanas [data-vista]').forEach((b) => { b.onclick = () => { E.vista = b.dataset.vista; E.edicion = false; $('#vista').scrollTop = 0; pintar(); }; });
 $('#btn-editar').onclick = () => { E.edicion = !E.edicion; E.sel = -1; E.vista = 'acordes'; pintar(); };
