@@ -33,9 +33,11 @@ body.trabajando .engranajes .eng-chico { animation: giro-chico-ya 2.5s linear in
 #form-url { display: flex; gap: 8px; flex: 1; max-width: 760px; align-items: center; }
 #form-url input { flex: 1; min-width: 0; background: var(--fondo); border: 1px solid var(--borde); border-radius: 6px; padding: 7px 12px; }
 /* botón Analizar = locomotora */
-button.locomotora { padding: 1px 8px; line-height: 0; border-radius: 8px; background: #e6f8ef; border-color: var(--acento); }
-button.locomotora:hover { background: #d3f5e4; border-color: var(--acento); }
-.locomotora .ruedas circle { fill: #e2483d; stroke: #2b2f37; stroke-width: 1.4; }
+/* solo el ícono, sin caja: el dibujo es el botón */
+button.locomotora { padding: 0; line-height: 0; border: 0; background: none; border-radius: 6px; }
+button.locomotora:hover { background: none; filter: brightness(1.15); }
+button.locomotora:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+.locomotora .ruedas circle { fill: #e2483d; stroke: #525866; stroke-width: 1.4; }
 .locomotora .humo circle { fill: #aab1bd; opacity: 0; }
 .locomotora:hover .humo circle, body.trabajando .locomotora .humo circle { animation: humo 1.4s ease-out infinite; }
 .locomotora:hover .humo circle:nth-child(2), body.trabajando .locomotora .humo circle:nth-child(2) { animation-delay: .25s; }

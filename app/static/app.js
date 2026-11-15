@@ -329,7 +329,7 @@ function pintarMezclador() {
   $('#mezclador').innerHTML = E.c.pistas.map((p) => fila(p.id, p.nombre, COLORES[p.id],
     p.nivel < 0.04 ? '<small>casi no suena en este tema</small>'
       : p.id === 'otros' && nombreOtros() !== 'Otros' ? `<small>${esc(nombreOtros().toLowerCase())}</small>` : '', 1)).join('')
-    + fila('metro', 'Metrónomo', '#9ca3af', '<small>clic en cada pulso, más agudo en el 1</small>', E.vol.metro);
+    + fila('metro', 'Metrónomo', '#9ca3af', '', E.vol.metro);
   $$('.pista').forEach((f) => {
     const id = f.dataset.id;
     $('.m', f).onclick = (ev) => {
@@ -1135,7 +1135,7 @@ function silbato() {
     const ctx = ctxAudio();
     ctx.resume();
     const sal = ctx.createGain(); sal.gain.value = 0.22; sal.connect(ctx.destination);
-    const filtro = ctx.createBiquadFilter(); filtro.type = 'lowpass'; filtro.frequency.value = 2600; filtro.connect(sal);
+    const filtro = ctx.createBiquadFilter(); filtro.type = 'lowpass'; filtro.frequency.value = 1800; filtro.connect(sal);
     const ruido = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
     ruido.getChannelData(0).forEach((_, i, d) => { d[i] = Math.random() * 2 - 1; });
     const pitada = (t0, dur) => {
@@ -1146,7 +1146,7 @@ function silbato() {
       env.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
       const vib = ctx.createOscillator(), vibG = ctx.createGain();
       vib.frequency.value = 5.5; vibG.gain.value = 4; vib.connect(vibG); vib.start(t0); vib.stop(t0 + dur);
-      [554, 698, 831].forEach((f, k) => {               // Do#, Fa, Sol# (un acorde menor-ish, típico de silbato)
+      [277, 349, 415].forEach((f, k) => {               // Do#, Fa, Sol# una octava abajo: silbato grave de locomotora
         const o = ctx.createOscillator(), g = ctx.createGain();
         o.type = 'sawtooth';
         o.frequency.setValueAtTime(f * 0.93, t0);          // arranca un poco abajo y sube, como el vapor
@@ -1156,7 +1156,7 @@ function silbato() {
         o.connect(g).connect(env); o.start(t0); o.stop(t0 + dur);
       });
       const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), ng = ctx.createGain();
-      n.buffer = ruido; bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.8; ng.gain.value = 0.35;
+      n.buffer = ruido; bp.type = 'bandpass'; bp.frequency.value = 1100; bp.Q.value = 0.8; ng.gain.value = 0.3;
       n.connect(bp).connect(ng).connect(env); n.start(t0); n.stop(t0 + dur);
     };
     const t = ctx.currentTime + 0.03;
