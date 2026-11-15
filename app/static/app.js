@@ -117,6 +117,7 @@ const ID_INST = { guitarra: 'guitar', piano: 'piano', otros: 'otros' };
 // cuerdas…). Se nombra con los créditos de la grabación (MusicBrainz) cuando los hay; los de la ficha del
 // disco (Wikipedia) solo se mencionan, porque pueden no sonar en este tema.
 const nombreOtros = () => ((E.c.creditos || {}).otros || 'Otros');
+const hayOtros = () => (E.c.notas.otros || []).length > 0;     // sin notas = casi no suena: ni pestaña ni hoja
 function avisoOtros() {
   const c = E.c.creditos || {};
   const fuentes = (c.fuentes || []).map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${u.includes('wikipedia') ? 'Wikipedia' : 'MusicBrainz'}</a>`).join(' y ');
@@ -339,7 +340,7 @@ function pintar() {
   v.innerHTML = `<div class="hoja ${E.vista}">${cabecera()}<div id="contenido"></div></div>`;
   // pestaña de la pista «otros»: solo si el análisis la transcribió, con el nombre de sus instrumentos
   const tabOtros = $('#pestanas [data-vista="otros"]');
-  tabOtros.hidden = !E.c.notas.otros;
+  tabOtros.hidden = !hayOtros();
   tabOtros.textContent = nombreOtros();
   if (E.vista === 'otros' && tabOtros.hidden) E.vista = 'acordes';
   ({ acordes: vistaAcordes, guitarra: () => vistaPartitura('guitarra'), piano: () => vistaPartitura('piano'), otros: () => vistaPartitura('otros'), bajo: () => vistaPartitura('bajo'), voz: () => vistaPartitura('voz'), impro: vistaImpro })[E.vista]($('#contenido'));
@@ -362,14 +363,14 @@ const pista = (id) => E.c.pistas.find((p) => p.id === id);
 function vistaAcordes(el) {
   const ed = E.edicion;
   // editando se ve (y se corrige) la armonía completa del tema, no solo lo que toca un instrumento
-  if (E.instrumento === 'otros' && !E.c.notas.otros) E.instrumento = 'guitarra';
+  if (E.instrumento === 'otros' && !hayOtros()) E.instrumento = 'guitarra';
   const pInst = ed ? null : pista(ID_INST[E.instrumento]);
   const usados = acordesUsados(pInst);
   const tocados = new Set(((E.c.correcciones || {}).acordes || []).map(([t]) => pulsoEn(t)));
   const el_inst = { guitarra: 'la guitarra', piano: 'el piano', otros: `la pista ${nombreOtros()}` }[E.instrumento];
   let h = ed ? barraEdicion(usados) : `<div class="dos no-imprimir" style="margin-top:12px">
       <div class="selector" id="sel-inst"><button data-i="guitarra">Guitarra</button><button data-i="piano">Piano</button>${
-        E.c.notas.otros ? `<button data-i="otros">${esc(nombreOtros())}</button>` : ''}</div>
+        hayOtros() ? `<button data-i="otros">${esc(nombreOtros())}</button>` : ''}</div>
       <span class="aviso" style="margin:0">${!propios(pInst)
     ? `Este tema se separó sin pista de ${E.instrumento}: volvé a bajarlo desde el link para tener su hoja. La armonía completa se ve en «Editar hoja».`
     : pInst.nivel < 0.04
