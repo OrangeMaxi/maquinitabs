@@ -111,7 +111,19 @@ const finCompas = (i) => (i + 1 < E.c.compases.length ? E.c.compases[i + 1].t : 
 //   - si la pista no suena, silencio (–). Nunca se rellena con lo de otro instrumento.
 const LINEA = '♪';
 const CALIDADES_PROPIAS = ['', 'm', '5', '7', 'm7', 'maj7', 'sus4', 'sus2', 'dim'];
-const CLAVE_NOTAS = { guitar: 'guitarra', piano: 'piano' };
+const CLAVE_NOTAS = { guitar: 'guitarra', piano: 'piano', otros: 'otros' };
+const ID_INST = { guitarra: 'guitar', piano: 'piano', otros: 'otros' };
+// La pista «otros» de demucs junta lo que no es voz, guitarra, piano, bajo ni batería (sintes, vientos,
+// cuerdas…). Se nombra con los créditos de la grabación (MusicBrainz) cuando los hay; los de la ficha del
+// disco (Wikipedia) solo se mencionan, porque pueden no sonar en este tema.
+const nombreOtros = () => ((E.c.creditos || {}).otros || 'Otros');
+function avisoOtros() {
+  const c = E.c.creditos || {};
+  const fuentes = (c.fuentes || []).map((u) => `<a href="${esc(u)}" target="_blank" rel="noopener">${u.includes('wikipedia') ? 'Wikipedia' : 'MusicBrainz'}</a>`).join(' y ');
+  if (c.otros) return `Instrumentos según los créditos de la grabación (${fuentes}).`;
+  if (c.en_el_disco) return `En el disco${c.disco ? ` «${esc(c.disco)}»` : ''} figuran: ${esc(c.en_el_disco.toLowerCase())} (${fuentes}); no todos tienen por qué sonar en este tema.`;
+  return 'Lo que no es voz, guitarra, piano, bajo ni batería (sintes, vientos, cuerdas…).';
+}
 function nombrarNotas(w) {               // w[12] = peso de cada nota -> nombre de acorde o null
   const total = w.reduce((s, x) => s + x, 0);
   const hay = w.map((x) => x > 0.08 * total);
@@ -298,7 +310,8 @@ function pintarMezclador() {
       <input type="range" min="0" max="1.5" step="0.01" value="${vol}" title="Volumen">
     </div>`;
   $('#mezclador').innerHTML = E.c.pistas.map((p) => fila(p.id, p.nombre, COLORES[p.id],
-    p.nivel < 0.04 ? '<small>casi no suena en este tema</small>' : '', 1)).join('')
+    p.nivel < 0.04 ? '<small>casi no suena en este tema</small>'
+      : p.id === 'otros' && nombreOtros() !== 'Otros' ? `<small>${esc(nombreOtros().toLowerCase())}</small>` : '', 1)).join('')
     + fila('metro', 'Metrónomo', '#9ca3af', '<small>clic en cada pulso, más agudo en el 1</small>', E.vol.metro);
   $$('.pista').forEach((f) => {
     const id = f.dataset.id;
@@ -324,7 +337,12 @@ function pintar() {
   const v = $('#vista');
   const arriba = v.scrollTop;
   v.innerHTML = `<div class="hoja ${E.vista}">${cabecera()}<div id="contenido"></div></div>`;
-  ({ acordes: vistaAcordes, guitarra: () => vistaPartitura('guitarra'), piano: () => vistaPartitura('piano'), bajo: () => vistaPartitura('bajo'), voz: () => vistaPartitura('voz'), impro: vistaImpro })[E.vista]($('#contenido'));
+  // pestaña de la pista «otros»: solo si el análisis la transcribió, con el nombre de sus instrumentos
+  const tabOtros = $('#pestanas [data-vista="otros"]');
+  tabOtros.hidden = !E.c.notas.otros;
+  tabOtros.textContent = nombreOtros();
+  if (E.vista === 'otros' && tabOtros.hidden) E.vista = 'acordes';
+  ({ acordes: vistaAcordes, guitarra: () => vistaPartitura('guitarra'), piano: () => vistaPartitura('piano'), otros: () => vistaPartitura('otros'), bajo: () => vistaPartitura('bajo'), voz: () => vistaPartitura('voz'), impro: vistaImpro })[E.vista]($('#contenido'));
   v.scrollTop = arriba;
   refrescar(true);
 }
@@ -344,16 +362,20 @@ const pista = (id) => E.c.pistas.find((p) => p.id === id);
 function vistaAcordes(el) {
   const ed = E.edicion;
   // editando se ve (y se corrige) la armonía completa del tema, no solo lo que toca un instrumento
-  const pInst = ed ? null : pista(E.instrumento === 'guitarra' ? 'guitar' : 'piano');
+  if (E.instrumento === 'otros' && !E.c.notas.otros) E.instrumento = 'guitarra';
+  const pInst = ed ? null : pista(ID_INST[E.instrumento]);
   const usados = acordesUsados(pInst);
   const tocados = new Set(((E.c.correcciones || {}).acordes || []).map(([t]) => pulsoEn(t)));
+  const el_inst = { guitarra: 'la guitarra', piano: 'el piano', otros: `la pista ${nombreOtros()}` }[E.instrumento];
   let h = ed ? barraEdicion(usados) : `<div class="dos no-imprimir" style="margin-top:12px">
-      <div class="selector" id="sel-inst"><button data-i="guitarra">Guitarra</button><button data-i="piano">Piano</button></div>
+      <div class="selector" id="sel-inst"><button data-i="guitarra">Guitarra</button><button data-i="piano">Piano</button>${
+        E.c.notas.otros ? `<button data-i="otros">${esc(nombreOtros())}</button>` : ''}</div>
       <span class="aviso" style="margin:0">${!propios(pInst)
     ? `Este tema se separó sin pista de ${E.instrumento}: volvé a bajarlo desde el link para tener su hoja. La armonía completa se ve en «Editar hoja».`
     : pInst.nivel < 0.04
-      ? `En esta grabación casi no suena ${E.instrumento === 'guitarra' ? 'la guitarra' : 'el piano'}.`
-      : `Solo lo que toca ${E.instrumento === 'guitarra' ? 'la guitarra' : 'el piano'}, sacado de su pista: – no suena, ${LINEA} toca una línea o notas sueltas (ver la partitura).`}</span>
+      ? `En esta grabación casi no suena ${el_inst}.`
+      : `Solo lo que toca ${el_inst}, sacado de su pista: – no suena, ${LINEA} toca una línea o notas sueltas (ver la partitura).${
+        E.instrumento === 'otros' ? ' ' + avisoOtros() : ''}`}</span>
     </div>`;
   h += `<div class="diagramas">${usados.map((a) => `<div class="cont" data-acorde="${esc(a.nombre)}">${
     E.instrumento === 'guitarra' ? T.svgGuitarra(a.nombre, a.nombre) : T.svgTeclado(T.notasAcorde(T.parse(a.nombre)), T.parse(a.nombre).raiz, a.nombre)}</div>`).join('')}</div>`;
@@ -637,6 +659,7 @@ const PARTITURAS = {
   voz: { nombre: 'melodía de voz', clave: 'treble', sube: 0, alto: 140 },
   guitarra: { nombre: 'guitarra', clave: 'treble', sube: 12, tab: 6, alto: 296, poli: true },
   piano: { nombre: 'piano', clave: 'treble', sube: 0, manoIzq: true, alto: 262, poli: true },
+  otros: { nombre: 'otros instrumentos', clave: 'treble', sube: 0, manoIzq: true, alto: 262, poli: true },
 };
 
 function vistaPartitura(tipo, el = $('#contenido')) {
@@ -655,6 +678,7 @@ function vistaPartitura(tipo, el = $('#contenido')) {
   else if (tipo === 'bajo') intro = '<p class="aviso">Bajo de 4 cuerdas (EADG). Las notas por debajo del Mi grave se subieron una octava. Cuantizado a semicorcheas.</p>';
   else if (tipo === 'guitarra') intro = '<p class="aviso">Lo que toca la guitarra en la grabación, transcripto automáticamente de su pista y cuantizado a semicorcheas. Afinación estándar; escrito una octava arriba de como suena, como se lee en guitarra. Las digitaciones de la tablatura son una propuesta: revisalas de oído.</p>';
   else if (tipo === 'piano') intro = '<p class="aviso">Lo que toca el piano o teclado en la grabación, transcripto automáticamente de su pista y cuantizado a semicorcheas. Arriba la mano derecha (desde el Do central), abajo la izquierda. Revisalo de oído.</p>';
+  else if (tipo === 'otros') intro = `<p class="aviso">${esc(nombreOtros())}: lo que suena en la pista «otros», transcripto automáticamente y cuantizado a semicorcheas, en sistema de dos pentagramas (arriba desde el Do central). Si hay varios instrumentos (por ejemplo sinte y vientos) aparecen juntos. ${avisoOtros()}</p>`;
   else {
     const orden = ns.filter((n) => n.d >= 2).map((n) => n.ms[0]).sort((a, b) => a - b);
     const lo = orden[Math.floor(orden.length * 0.03)], hi = orden[Math.floor(orden.length * 0.97)];

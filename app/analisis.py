@@ -403,13 +403,14 @@ def analizar(base, compas=None, progreso=_noop):
     progreso("Guitarra y piano…", 97)
     import transcribir
     poli = {}
-    for pid, clave, rango in (("guitar", "guitarra", (40, 88)), ("piano", "piano", (24, 100))):
+    # «otros» = lo que demucs no reconoce como voz, guitarra, piano, bajo ni batería: sintes, vientos, cuerdas…
+    for pid, clave, rango in (("guitar", "guitarra", (40, 88)), ("piano", "piano", (24, 100)), ("otros", "otros", (28, 100))):
         pista = next((p for p in pistas if p["id"] == pid), None)
         if pista is None:
             continue
         poli[clave] = [] if pista["nivel"] < 0.04 else transcribir.notas(
             os.path.join(carpeta, pid + ".wav"), os.path.join(carpeta_an, f"_bp_{pid}.npz"), bordes, rango,
-            max_voces=6 if pid == "guitar" else 8)
+            max_voces={"guitar": 6, "piano": 8}.get(pid, 6))
         # donde la pista está callada, lo que queda es filtración de otros instrumentos
         calla = {k for k, v in enumerate(pista["pulsos"]) if not v}
         poli[clave] = [n for n in poli[clave] if n["i"] // 4 not in calla]
@@ -473,11 +474,31 @@ def analizar(base, compas=None, progreso=_noop):
         "secciones": [{"nombre": s["nombre"], "ini": s["ini"], "fin": s["fin"], "letra": s.get("letra", "")}
                       for s in res["secciones"]],
         "notas": {"bajo": bajo, "voz": voz, **poli},
+        "creditos": creditos_de(base, meta["titulo"], meta["artista"], progreso),
     }
     aplicar_correcciones(out, corr)
     guardar(base, out)
     progreso("Listo", 100)
     return out
+
+
+def creditos_de(base, titulo, artista, progreso=_noop):
+    """Instrumentos del tema según MusicBrainz y Wikipedia (creditos.py). Se busca una vez y queda en
+    analisis\\creditos.json; si no hay internet no se guarda, así se reintenta en el próximo análisis.
+    SIN_INTERNET=1 lo saltea."""
+    ruta = os.path.join(base, "analisis", "creditos.json")
+    if os.path.exists(ruta):
+        with open(ruta, encoding="utf-8") as f:
+            return json.load(f)
+    if os.environ.get("SIN_INTERNET"):
+        return None
+    progreso("Buscando los instrumentos del tema en internet…", 98)
+    import creditos
+    c = creditos.instrumentos(titulo, artista)
+    if c["fuentes"]:
+        with open(ruta, "w", encoding="utf-8") as f:
+            json.dump(c, f, ensure_ascii=False, indent=1)
+    return c
 
 
 def guardar(base, out):

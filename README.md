@@ -114,7 +114,11 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
      instrumento, sacado de su propia pista: el acorde que forman sus notas, ♪ si toca una línea o notas
      sueltas (están en la partitura) y – si no suena. Nunca se rellena con lo que toca el bajo u otro
      instrumento. La armonía completa del tema se ve en **Editar hoja**. Clic en un compás para saltar ahí.
-   - **Guitarra / Piano / Bajo / Voz**: partitura (y tablatura en guitarra y bajo).
+   - **Guitarra / Piano / Otros / Bajo / Voz**: partitura (y tablatura en guitarra y bajo). «Otros» es lo que
+     no es voz, guitarra, piano, bajo ni batería (sintes, vientos, cuerdas…); también tiene su hoja de acordes.
+     Al analizar, la app busca en MusicBrainz y Wikipedia qué instrumentos tiene el tema: si los créditos son
+     de esa grabación, la pista toma ese nombre (p. ej. «Sintetizador, saxo y trompeta»); si solo están los
+     del disco, se mencionan como referencia. Sin internet (o con `SIN_INTERNET=1`) queda como «Otros».
    - **Improvisación**: escalas recomendadas e ideas de arreglo por sección.
 4. Abajo: reproducir (barra espaciadora), cuenta previa, repetir sección y transporte de tonalidad
    (cambia el audio y toda la notación).
