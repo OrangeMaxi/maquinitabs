@@ -20,8 +20,8 @@ h4 small { text-transform: none; letter-spacing: 0; color: var(--acento2); margi
 .btn-panel:hover, .btn-panel.on { color: var(--texto); }
 
 /* engranajes del logo: cada tanto dan una vuelta; mientras se analiza un tema giran sin parar */
-.engranajes .eng-grande { fill: var(--acento); transform-origin: 12.5px 15px; animation: giro-grande 9s ease-in-out infinite; }
-.engranajes .eng-chico { fill: var(--acento2); transform-origin: 29.1px 15px; animation: giro-chico 9s ease-in-out infinite; }
+.engranajes .eng-grande { fill: #f4f5f8; transform-origin: 12.5px 15px; animation: giro-grande 9s ease-in-out infinite; }
+.engranajes .eng-chico { fill: #b4b9c4; transform-origin: 29.1px 15px; animation: giro-chico 9s ease-in-out infinite; }
 .engranajes circle { fill: var(--panel); }
 @keyframes giro-grande { 0%, 78% { transform: rotate(0deg); } 100% { transform: rotate(72deg); } }
 @keyframes giro-chico { 0%, 78% { transform: rotate(25.7deg); } 100% { transform: rotate(-77.1deg); } }
@@ -33,12 +33,10 @@ body.trabajando .engranajes .eng-chico { animation: giro-chico-ya 2.5s linear in
 #form-url { display: flex; gap: 8px; flex: 1; max-width: 760px; align-items: center; }
 #form-url input { flex: 1; min-width: 0; background: var(--fondo); border: 1px solid var(--borde); border-radius: 6px; padding: 7px 12px; }
 /* botón Analizar = locomotora */
-.locomotora { padding: 2px 10px; line-height: 0; border-radius: 8px; }
-.locomotora .loco { fill: #06281a; }
-.locomotora .ventana { fill: #bff3dc; }
-.locomotora .ruedas circle { fill: #06281a; stroke: #bff3dc; stroke-width: 1.4; }
-.locomotora .biela { stroke: #bff3dc; stroke-width: 1.8; stroke-linecap: round; }
-.locomotora .humo circle { fill: #e8fff4; opacity: 0; }
+button.locomotora { padding: 1px 8px; line-height: 0; border-radius: 8px; background: #e6f8ef; border-color: var(--acento); }
+button.locomotora:hover { background: #d3f5e4; border-color: var(--acento); }
+.locomotora .ruedas circle { fill: #e2483d; stroke: #2b2f37; stroke-width: 1.4; }
+.locomotora .humo circle { fill: #aab1bd; opacity: 0; }
 .locomotora:hover .humo circle, body.trabajando .locomotora .humo circle { animation: humo 1.4s ease-out infinite; }
 .locomotora:hover .humo circle:nth-child(2), body.trabajando .locomotora .humo circle:nth-child(2) { animation-delay: .25s; }
 .locomotora:hover .humo circle:nth-child(3), body.trabajando .locomotora .humo circle:nth-child(3) { animation-delay: .5s; }
@@ -47,11 +45,8 @@ body.trabajando .engranajes .eng-chico { animation: giro-chico-ya 2.5s linear in
 
 .cuerpo { flex: 1; display: flex; min-height: 0; position: relative; }
 aside { width: 270px; flex: none; background: var(--panel); border-right: 1px solid var(--borde); padding: 4px 14px 20px; overflow-y: auto; }
-.panel-cabeza { display: flex; justify-content: flex-end; padding-top: 8px; }
-.panel-cabeza button { font-size: 12px; padding: 3px 9px; }
-/* panel lateral: fijo (al costado), oculto, o flotando sobre la hoja (se cierra al tocar afuera) */
+/* panel lateral: visible u oculto; la hoja ocupa el resto */
 body.panel-oculto aside { display: none; }
-body.panel-flotante aside { display: block; position: absolute; top: 0; left: 0; bottom: 0; z-index: 20; box-shadow: 8px 0 30px #000a; max-height: none; width: min(300px, 86vw); border-right: 1px solid var(--borde); }
 main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 #vista { flex: 1; overflow-y: auto; padding: 22px; scroll-behavior: smooth; }
 
@@ -177,13 +172,24 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .dos { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 
 /* ------------------------------------------------ reproductor */
-.reproductor { display: flex; align-items: center; gap: 16px; padding: 10px 18px; background: var(--panel); border-top: 1px solid var(--borde); }
+/* reproductor: mando (inicio, play, tiempo, barra) a lo ancho; acorde, interruptores y tonalidad repartidos parejo */
+.reproductor { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 10px 22px; background: var(--panel); border-top: 1px solid var(--borde); }
+.mando { flex: 1; min-width: 240px; display: flex; align-items: center; gap: 14px; }
+.interruptor { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; color: var(--tenue); user-select: none; }
+.interruptor input { position: absolute; opacity: 0; pointer-events: none; }
+.interruptor svg { width: 40px; height: 40px; padding: 8px; border-radius: 50%; border: 1px solid var(--borde); background: var(--panel2);
+  fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: background .15s, color .15s; }
+.interruptor small { font-size: 10.5px; }
+.interruptor:hover svg { border-color: var(--tenue); }
+.interruptor:has(input:checked) { color: var(--acento); }
+.interruptor:has(input:checked) svg { background: var(--acento); border-color: var(--acento); color: #06281a; }
+.interruptor:has(input:focus-visible) svg { outline: 2px solid var(--acento); outline-offset: 2px; }
 .play { width: 46px; height: 46px; border-radius: 50%; background: var(--acento); border: 0; color: #06281a; font-size: 18px; flex: none; }
 .play:disabled { background: var(--panel2); color: var(--tenue); cursor: wait; }
-.inicio { width: 36px; height: 36px; border-radius: 50%; padding: 0; display: grid; place-items: center; flex: none; margin-right: -8px; }
-.bucle { display: flex; flex-direction: column; gap: 2px; color: var(--tenue); font-size: 12.5px; white-space: nowrap; }
-.bucle label { cursor: pointer; } .bucle input { accent-color: var(--acento); vertical-align: -2px; }
-.bucle span { display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+.inicio { width: 36px; height: 36px; border-radius: 50%; padding: 0; display: grid; place-items: center; flex: none; margin-right: -6px; }
+.bucle { display: flex; align-items: center; gap: 10px; color: var(--tenue); font-size: 12.5px; white-space: nowrap; }
+.bucle .rango { display: flex; flex-direction: column; gap: 3px; }
+.bucle .rango span { display: flex; justify-content: space-between; gap: 6px; align-items: center; }
 .bucle select { background: var(--fondo); border: 1px solid var(--borde); border-radius: 4px; padding: 1px 4px; font-size: 12px; max-width: 150px; }
 .bucle:not(.on) select { opacity: .6; }
 .compas.en-bucle, .zona.en-bucle { box-shadow: inset 0 -4px 0 #f5a524; }
@@ -214,7 +220,8 @@ dialog .acciones { display: flex; justify-content: flex-end; gap: 8px; margin-to
   #vista { padding: 10px; } .hoja { padding: 16px 12px; }
   .opciones { flex-direction: row; gap: 12px; flex-wrap: wrap; }
   .pista { grid-template-columns: 22px 84px 1fr auto auto; padding: 4px 0; }
-  .bucle { flex-direction: row; flex-wrap: wrap; gap: 4px 12px; }
+  .reproductor { gap: 10px 18px; justify-content: space-around; padding: 8px 12px; }
+  .mando { flex-basis: 100%; }
   .barra-sup { gap: 10px; padding: 8px 10px; }
   .pista > * { grid-row: 1; } .pista input[type=range] { grid-column: 3; } .pista .m { grid-column: 4; } .pista .s { grid-column: 5; }
   .pista .nombre small { display: none; }

@@ -1112,24 +1112,58 @@ $('#repetir').onchange = () => {
 // ----------------------------------------------------------------- volver al principio
 $('#btn-inicio').onclick = () => { E.pararEn = null; ir(0); $('#vista').scrollTo({ top: 0 }); };
 
-// ----------------------------------------------------------------- panel lateral: fijo, oculto o flotante
-function ponerPanel(modo) {             // 'fijo' | 'oculto' | 'flotante'
-  document.body.classList.toggle('panel-oculto', modo === 'oculto');
-  document.body.classList.toggle('panel-flotante', modo === 'flotante');
-  $('#btn-panel').classList.toggle('on', modo !== 'oculto');
-  $('#btn-fijar').textContent = modo === 'fijo' ? 'Ocultar panel' : 'Fijar panel';
-  if (modo !== 'flotante') recordar('panel', modo);
+// ----------------------------------------------------------------- panel lateral: visible u oculto
+function ponerPanel(visible) {
+  document.body.classList.toggle('panel-oculto', !visible);
+  $('#btn-panel').classList.toggle('on', visible);
+  recordar('panel', visible ? 'fijo' : 'oculto');
   if (E.c && E.vista in PARTITURAS) pintar();           // la partitura se re-acomoda al ancho nuevo
 }
-const modoPanel = () => (document.body.classList.contains('panel-flotante') ? 'flotante'
-  : document.body.classList.contains('panel-oculto') ? 'oculto' : 'fijo');
-$('#btn-panel').onclick = (ev) => { ev.stopPropagation(); ponerPanel(modoPanel() === 'oculto' ? 'flotante' : 'oculto'); };
-$('#btn-fijar').onclick = () => ponerPanel(modoPanel() === 'fijo' ? 'oculto' : 'fijo');
-document.addEventListener('click', (ev) => {        // el flotante se cierra al tocar la hoja
-  if (modoPanel() === 'flotante' && !ev.target.closest('#panel') && !ev.target.closest('#btn-panel')) ponerPanel('oculto');
-});
-// por defecto: fijo en pantallas anchas, oculto en tablets y celulares
-ponerPanel(recordar('panel') || (window.innerWidth >= 1100 ? 'fijo' : 'oculto'));
+const panelVisible = () => !document.body.classList.contains('panel-oculto');
+$('#btn-panel').onclick = () => ponerPanel(!panelVisible());
+// por defecto: visible en pantallas anchas, oculto en tablets y celulares
+ponerPanel(recordar('panel') ? recordar('panel') === 'fijo' : window.innerWidth >= 1100);
+
+// ----------------------------------------------------------------- silbato de tren (al tocar Analizar)
+// en el clic (y no en el envío) para que suene siempre que se toca la locomotora; Enter en el campo también
+// dispara un clic en el botón
+$('.locomotora').addEventListener('click', () => silbato());
+// Silbato de vapor sintetizado: tres tubos afinados en acorde (como los silbatos de locomotora) con un
+// poco de vibrato, más el soplido del vapor (ruido filtrado). Dos pitadas: una corta y una larga.
+function silbato() {
+  try {
+    const ctx = ctxAudio();
+    ctx.resume();
+    const sal = ctx.createGain(); sal.gain.value = 0.22; sal.connect(ctx.destination);
+    const filtro = ctx.createBiquadFilter(); filtro.type = 'lowpass'; filtro.frequency.value = 2600; filtro.connect(sal);
+    const ruido = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+    ruido.getChannelData(0).forEach((_, i, d) => { d[i] = Math.random() * 2 - 1; });
+    const pitada = (t0, dur) => {
+      const env = ctx.createGain(); env.connect(filtro);
+      env.gain.setValueAtTime(0.0001, t0);
+      env.gain.exponentialRampToValueAtTime(1, t0 + 0.08);
+      env.gain.setValueAtTime(1, t0 + dur - 0.12);
+      env.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      const vib = ctx.createOscillator(), vibG = ctx.createGain();
+      vib.frequency.value = 5.5; vibG.gain.value = 4; vib.connect(vibG); vib.start(t0); vib.stop(t0 + dur);
+      [554, 698, 831].forEach((f, k) => {               // Do#, Fa, Sol# (un acorde menor-ish, típico de silbato)
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(f * 0.93, t0);          // arranca un poco abajo y sube, como el vapor
+        o.frequency.exponentialRampToValueAtTime(f, t0 + 0.12);
+        vibG.connect(o.frequency);
+        g.gain.value = [0.18, 0.14, 0.11][k];
+        o.connect(g).connect(env); o.start(t0); o.stop(t0 + dur);
+      });
+      const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), ng = ctx.createGain();
+      n.buffer = ruido; bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.8; ng.gain.value = 0.35;
+      n.connect(bp).connect(ng).connect(env); n.start(t0); n.stop(t0 + dur);
+    };
+    const t = ctx.currentTime + 0.03;
+    pitada(t, 0.38);
+    pitada(t + 0.5, 1.15);
+  } catch (e) { /* sin audio: no pasa nada */ }
+}
 
 // ----------------------------------------------------------------- engranajes del logo
 $$('[data-engranaje]').forEach((p) => {
@@ -1144,7 +1178,6 @@ $$('[data-engranaje]').forEach((p) => {
 document.addEventListener('keydown', (ev) => {
   if (ev.code === 'Space' && E.c && !/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName)) { ev.preventDefault(); $('#btn-play').click(); }
   if (ev.code === 'Home' && E.c && !/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName)) { ev.preventDefault(); $('#btn-inicio').click(); }
-  if (ev.code === 'Escape' && modoPanel() === 'flotante') ponerPanel('oculto');
 });
 $$('#pestanas [data-vista]').forEach((b) => { b.onclick = () => { E.vista = b.dataset.vista; E.edicion = false; $('#vista').scrollTop = 0; pintar(); }; });
 $('#btn-editar').onclick = () => { E.edicion = !E.edicion; E.sel = -1; E.vista = 'acordes'; pintar(); };
