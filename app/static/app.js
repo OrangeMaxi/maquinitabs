@@ -14,7 +14,7 @@ const COLORES = { vocals: '#f472b6', guitar: '#f5a524', piano: '#60a5fa', bass: 
 const E = {
   id: null, c: null,            // canción abierta (app.json)
   st: 0,                        // semitonos de transporte
-  vista: 'acordes', instrumento: 'guitarra', escala: 0, diapason: 'guitarra',
+  vista: 'armonia', modo: 'acordes', escala: 0, diapason: 'guitarra',   // vista = pestaña (instrumento)
   geo: [],                      // por compás: {fila, x0, x1}
   compasActual: -1, acordeActual: '',
   mute: {}, solo: {}, vol: {},
@@ -101,6 +101,7 @@ async function abrir(id) {
   Object.assign(E, { id, st: 0, escala: 0, mute: {}, solo: {}, vol: {}, sel: -1, bucle: null });
   $('#repetir').checked = false;
   poner(c);
+  E.vista = instrumentoPrincipal();
   c.pistas.forEach((p) => { E.vol[p.id] = 1; });
   // el metrónomo es una pista más del mezclador; prendido/apagado y volumen se recuerdan entre temas
   E.mute.metro = recordar('metro') !== '1';
@@ -118,7 +119,7 @@ async function abrir(id) {
 // deja `c` (app.json) como canción abierta; también después de una corrección, sin recargar el audio
 function poner(c) {
   if (!c.base) c.base = { acordes: c.compases.flatMap((x) => x.acordes.flatMap(([a, n]) => Array(n).fill(a))) };
-  Object.assign(E, { c, compasActual: -1, seccionBucle: null, propios: null });
+  Object.assign(E, { c, compasActual: -1, seccionBucle: null, propios: null, detectados: null });
   E.unos = new Set(c.compases.filter((x) => !x.anacrusa).map((x) => x.beat));   // pulsos que son el "1"
   llenarBucle();
 }
@@ -176,11 +177,23 @@ function encaja(a, w) {                  // ¿las notas w son de ese acorde del 
   return tonos.reduce((s, t) => s + w[t], 0) >= 0.8 * total && presentes.length >= 2
     && (presentes.includes(tonos[0]) || presentes.includes(tonos[1]));
 }
-function propios(p) {                    // por pulso: acorde | LINEA | '' ; null si el tema no tiene esa pista
+// por pulso: acorde | LINEA | '' ; null si el tema no tiene esa pista. Lo detectado más lo corregido a mano.
+function propios(p) {
+  const det = detectados(p);
+  if (!det) return null;
+  E.propios = E.propios || {};
+  if (!E.propios[p.id]) {
+    const out = det.slice();
+    (((E.c.correcciones || {}).pistas || {})[p.id] || []).forEach(([t, a]) => { out[pulsoEn(t)] = a; });
+    E.propios[p.id] = out;
+  }
+  return E.propios[p.id];
+}
+function detectados(p) {
   const notas = p && E.c.notas[CLAVE_NOTAS[p.id]];
   if (!notas) return null;
-  E.propios = E.propios || {};
-  if (E.propios[p.id]) return E.propios[p.id];
+  E.detectados = E.detectados || {};
+  if (E.detectados[p.id]) return E.detectados[p.id];
   const nb = E.c.beats.length - 1;
   const w = Array.from({ length: nb }, () => new Array(12).fill(0));
   notas.forEach((n) => {
@@ -200,7 +213,7 @@ function propios(p) {                    // por pulso: acorde | LINEA | '' ; nul
       ks.forEach((j) => { out[j] = x; });
     });
   });
-  E.propios[p.id] = out;
+  E.detectados[p.id] = out;
   return out;
 }
 // acordes de un compás tal como los toca una pista (p = null: la armonía completa del tema)
@@ -217,6 +230,17 @@ function acordesDe(c, p) {
     if (out[j][0] === '' && out[j][1] === 1 && out[j - 1][0] === out[j + 1][0]) { out[j - 1][1] += 1 + out[j + 1][1]; out.splice(j, 2); j--; }
   }
   return out;
+}
+// la hoja que se muestra al abrir un tema: la pista que más pulsos toca en acordes; si ninguna, la armonía
+function instrumentoPrincipal() {
+  let mejor = 'armonia', max = 0;
+  ['guitarra', 'piano', 'otros'].forEach((i) => {
+    const p = pista(ID_INST[i]);
+    if (!p || p.nivel < 0.04 || (i === 'otros' && !hayOtros())) return;
+    const n = (propios(p) || []).filter((x) => x && x !== LINEA && x !== 'N.C.').length;
+    if (n > max) { max = n; mejor = i; }
+  });
+  return mejor;
 }
 function acordesUsados(p) {           // [{nombre (transportado), pulsos}] por orden de uso; p = solo lo que toca esa pista
   const m = new Map();
@@ -370,20 +394,47 @@ function pintar() {
   const t = ton();
   $('#tonalidad').textContent = t.nombre;
   $('#st-valor').textContent = E.st ? `${E.st > 0 ? '+' : ''}${E.st} semitono${Math.abs(E.st) === 1 ? '' : 's'}` : 'original';
-  $$('#pestanas [data-vista]').forEach((b) => b.classList.toggle('activa', b.dataset.vista === E.vista));
-  $('#btn-editar').classList.toggle('on', !!E.edicion);
-  const v = $('#vista');
-  const arriba = v.scrollTop;
-  v.innerHTML = `<div class="hoja ${E.vista}">${cabecera()}<div id="contenido"></div></div>`;
   // pestaña de la pista «otros»: solo si el análisis la transcribió, con el nombre de sus instrumentos
   const tabOtros = $('#pestanas [data-vista="otros"]');
   tabOtros.hidden = !hayOtros();
   tabOtros.textContent = nombreOtros();
-  if (E.vista === 'otros' && tabOtros.hidden) E.vista = 'acordes';
-  ({ acordes: vistaAcordes, guitarra: () => vistaPartitura('guitarra'), piano: () => vistaPartitura('piano'), otros: () => vistaPartitura('otros'), bajo: () => vistaPartitura('bajo'), voz: () => vistaPartitura('voz'), impro: vistaImpro })[E.vista]($('#contenido'));
+  if (E.vista === 'otros' && tabOtros.hidden) E.vista = 'armonia';
+  if (!MODOS[E.vista].includes(E.modo)) E.modo = MODOS[E.vista][0];
+  // solo se corrigen a mano las hojas de acordes: la partitura es la transcripción y la improvisación sale de los acordes
+  const sinPista = E.vista !== 'armonia' && !propios(pista(ID_INST[E.vista]));
+  const editable = E.modo === 'acordes' && !sinPista;
+  if (!editable) E.edicion = false;
+  $$('#pestanas [data-vista]').forEach((b) => b.classList.toggle('activa', b.dataset.vista === E.vista));
+  $('#btn-editar').classList.toggle('on', !!E.edicion);
+  $('#btn-editar').disabled = !editable;
+  $('#btn-editar').title = editable ? 'Corregir la hoja de acordes de esta pestaña escuchando el tema'
+    : E.modo === 'partitura' ? `La partitura no se edita a mano${MODOS[E.vista].includes('acordes') ? ': se corrigen los acordes, en «Acordes»' : ''}`
+    : E.modo === 'impro' ? `La improvisación se arma sola a partir de los acordes del tema: corregilos en «Acordes»${MODOS[E.vista].includes('acordes') ? '' : ' de «Tema completo»'}`
+    : 'Este tema no tiene pista propia de este instrumento';
+  const v = $('#vista');
+  const arriba = v.scrollTop;
+  v.innerHTML = `<div class="hoja ${E.modo} ${E.vista}">${cabecera()}${E.edicion ? '' : selectorModos()}<div id="contenido"></div></div>`;
+  $$('#sel-modo button', v).forEach((b) => {
+    b.classList.toggle('on', b.dataset.m === E.modo);
+    b.onclick = () => { E.modo = b.dataset.m; pintar(); };
+  });
+  ({ acordes: vistaAcordes, partitura: () => vistaPartitura(E.vista), impro: vistaImpro })[E.modo]($('#contenido'));
   v.scrollTop = arriba;
   refrescar(true);
   marcarBucle();
+}
+// qué se puede ver de cada pestaña: el bajo y la voz tocan una nota por vez (no tienen hoja de acordes) y
+// la armonía es el resumen de todas las pistas (no tiene partitura)
+const MODOS = {
+  armonia: ['acordes', 'impro'],
+  guitarra: ['acordes', 'partitura', 'impro'], piano: ['acordes', 'partitura', 'impro'], otros: ['acordes', 'partitura', 'impro'],
+  bajo: ['partitura', 'impro'], voz: ['partitura', 'impro'],
+};
+const NOMBRE_MODO = { acordes: 'Acordes', partitura: 'Partitura', impro: 'Improvisación' };
+function selectorModos() {
+  const partitura = E.vista === 'guitarra' || E.vista === 'bajo' ? 'Partitura y tablatura' : 'Partitura';
+  return `<div class="no-imprimir" style="margin-top:12px"><div class="selector" id="sel-modo">${MODOS[E.vista].map((m) =>
+    `<button data-m="${m}">${m === 'partitura' ? partitura : NOMBRE_MODO[m]}</button>`).join('')}</div></div>`;
 }
 function cabecera() {
   const c = E.c;
@@ -400,24 +451,21 @@ const pista = (id) => E.c.pistas.find((p) => p.id === id);
 // ----------------------------------------------------------------- acordes y estructura
 function vistaAcordes(el) {
   const ed = E.edicion;
-  // editando se ve (y se corrige) la armonía completa del tema, no solo lo que toca un instrumento
-  if (E.instrumento === 'otros' && !hayOtros()) E.instrumento = 'guitarra';
-  const pInst = ed ? null : pista(ID_INST[E.instrumento]);
+  const armonia = E.vista === 'armonia';
+  const pInst = armonia ? null : pista(ID_INST[E.vista]);
   const usados = acordesUsados(pInst);
-  const tocados = new Set(((E.c.correcciones || {}).acordes || []).map(([t]) => pulsoEn(t)));
-  const el_inst = { guitarra: 'la guitarra', piano: 'el piano', otros: `la pista ${nombreOtros()}` }[E.instrumento];
-  let h = ed ? barraEdicion(usados) : `<div class="dos no-imprimir" style="margin-top:12px">
-      <div class="selector" id="sel-inst"><button data-i="guitarra">Guitarra</button><button data-i="piano">Piano</button>${
-        hayOtros() ? `<button data-i="otros">${esc(nombreOtros())}</button>` : ''}</div>
-      <span class="aviso" style="margin:0">${!propios(pInst)
-    ? `Este tema se separó sin pista de ${E.instrumento}: volvé a bajarlo desde el link para tener su hoja. La armonía completa se ve en «Editar hoja».`
+  const tocados = new Set(correccionesDe(pInst).map(([t]) => pulsoEn(t)));
+  const el_inst = { guitarra: 'la guitarra', piano: 'el piano', otros: `la pista ${nombreOtros()}` }[E.vista];
+  let h = ed ? barraEdicion(usados, pInst, el_inst) : `<p class="aviso no-imprimir">${armonia
+    ? 'La armonía completa del tema, sacada de la mezcla de todas las pistas. Para corregirla, «Editar hoja».'
+    : !propios(pInst)
+    ? `Este tema se separó sin pista de ${E.vista}: volvé a bajarlo desde el link para tener su hoja. La armonía completa está en la pestaña «Tema completo».`
     : pInst.nivel < 0.04
-      ? `En esta grabación casi no suena ${el_inst}.`
-      : `Solo lo que toca ${el_inst}, sacado de su pista: – no suena, ${LINEA} toca una línea o notas sueltas (ver la partitura).${
-        E.instrumento === 'otros' ? ' ' + avisoOtros() : ''}`}</span>
-    </div>`;
+      ? `En esta grabación casi no suena ${el_inst}. La armonía completa del tema está en la pestaña «Tema completo».`
+      : `Solo lo que toca ${el_inst}, sacado de su pista: – no suena, ${LINEA} toca una línea o notas sueltas (ver «Partitura»).${
+        E.vista === 'otros' ? ' ' + avisoOtros() : ''}`}</p>`;
   h += `<div class="diagramas">${usados.map((a) => `<div class="cont" data-acorde="${esc(a.nombre)}">${
-    E.instrumento === 'guitarra' ? T.svgGuitarra(a.nombre, a.nombre) : T.svgTeclado(T.notasAcorde(T.parse(a.nombre)), T.parse(a.nombre).raiz, a.nombre)}</div>`).join('')}</div>`;
+    E.vista === 'guitarra' || armonia ? T.svgGuitarra(a.nombre, a.nombre) : T.svgTeclado(T.notasAcorde(T.parse(a.nombre)), T.parse(a.nombre).raiz, a.nombre)}</div>`).join('')}</div>`;
   E.c.secciones.forEach((s) => {
     h += tituloSeccion(s) + '<div class="fila-compases">';
     let previo = null;
@@ -439,10 +487,6 @@ function vistaAcordes(el) {
   });
   h += `<p class="aviso">Generado automáticamente a partir del audio — revisar de oído. ${ed ? '' : 'Hacé clic en un compás para saltar ahí; con «Editar hoja» podés corregir acordes y compases.'}</p>`;
   el.innerHTML = h;
-  $$('#sel-inst button', el).forEach((b) => {
-    b.classList.toggle('on', b.dataset.i === E.instrumento);
-    b.onclick = () => { E.instrumento = b.dataset.i; pintar(); };
-  });
   $$('.compas', el).forEach((d) => {
     const i = +d.dataset.c;
     E.geo[i] = { fila: d.parentElement, celda: d };
@@ -479,31 +523,48 @@ function normalizarAcorde(txt) {
   return m[1] + q + (m[3] ? '/' + m[3][0].toUpperCase() + m[3].slice(1) : '');
 }
 
-function barraEdicion(usados) {
+// p = pista cuya hoja se corrige (null: la armonía del tema)
+const correccionesDe = (p) => (p ? ((E.c.correcciones || {}).pistas || {})[p.id] : (E.c.correcciones || {}).acordes) || [];
+const pulsosHoja = (cp, p) => (p ? (propios(p) || []).slice(cp.beat, cp.beat + cp.pulsos) : pulsosDe(cp));
+// lo que muestra una casilla del editor: en la hoja de un instrumento '' es «no toca»
+const casilla = (a, p) => (p && !a ? '–' : a === LINEA ? LINEA : nom(a));
+// texto de una casilla -> valor sin transportar; undefined = vacía (sigue el anterior); null = no se entiende.
+// En la hoja de un instrumento «–» es '' (no toca) y «♪» una línea.
+function leerCasilla(txt, p) {
+  if (p && /^\s*(♪|linea|línea)\s*$/i.test(txt)) return LINEA;
+  const v = normalizarAcorde(txt);
+  if (v === '') return undefined;
+  if (v === null || v === 'N.C.') return v === 'N.C.' && p ? '' : v;
+  return E.st ? T.transportar(v, -E.st, T.tonalidad(E.c.tonalidad, 0).bemol) : v;
+}
+
+function barraEdicion(usados, p, el_inst) {
   const c = E.c, k = c.correcciones || {};
-  const n = (k.acordes || []).length;
+  const n = correccionesDe(p).length;
   const hechas = [n ? `${n} ${n === 1 ? 'pulso corregido' : 'pulsos corregidos'}` : '', k.unos ? 'compases cambiados a mano' : ''].filter(Boolean).join(' · ');
   let h = `<div class="editor no-imprimir"><div class="ed-linea">
-      <b>Editando la hoja</b>
+      <b>${p ? `Editando la hoja de ${esc(el_inst.replace(/^la pista /, ''))}` : 'Editando la armonía del tema'}</b>
       <span>Compás del tema <span class="selector" id="ed-metro">${[3, 4].map((x) => `<button data-n="${x}" class="${c.compas === x ? 'on' : ''}">${x}/4</button>`).join('')}</span></span>
       <span class="hueco"></span>
-      ${hechas ? `<small>${hechas}</small><button id="ed-deshacer" title="Borra todas las correcciones de acordes y compases">Volver a lo detectado</button>` : ''}
+      ${hechas ? `<small>${hechas}</small><button id="ed-deshacer" title="${p ? `Borra las correcciones de la hoja de ${esc(el_inst)}` : 'Borra todas las correcciones de acordes y compases'}">Volver a lo detectado</button>` : ''}
       <button id="ed-salir" class="primario">Listo</button></div>`;
   const cp = c.compases[E.sel];
   if (!cp) {
     h += '<div class="ed-linea"><span class="aviso" style="margin:0">Hacé clic en un compás para corregir sus acordes o su cantidad de pulsos. Todo se guarda solo.</span></div>';
   } else {
-    const ps = pulsosDe(cp);
+    const ps = pulsosHoja(cp, p);
     h += `<div class="ed-linea"><b>Compás ${E.sel + 1}</b><small>${mmss(cp.t)}</small>
       <span id="ed-pulsos">${ps.map((a, j) => `<label><small>${j + 1}</small><input data-j="${j}" list="ed-lista" autocomplete="off" spellcheck="false"
-        placeholder="sigue" value="${j === 0 || a !== ps[j - 1] ? esc(nom(a)) : ''}"></label>`).join('')}</span>
+        placeholder="sigue" value="${j === 0 || a !== ps[j - 1] ? esc(casilla(a, p)) : ''}"></label>`).join('')}</span>
       <button id="ed-ok" class="primario" title="Guarda y pasa al compás siguiente (Enter)">Guardar ↵</button>
       <button id="ed-oir" title="Reproduce solo este compás">▶ Escuchar</button></div>
       <div class="ed-linea"><span>Pulsos del compás <button id="ed-menos" title="Un pulso menos: los compases siguientes se corren">−</button>
         <b>${cp.pulsos}</b> <button id="ed-mas" title="Un pulso más: los compases siguientes se corren">+</button></span>
       <button id="ed-partir"${cp.pulsos < 2 ? ' disabled' : ''}>Partir en dos</button>
       <button id="ed-unir"${E.sel + 1 >= c.compases.length ? ' disabled' : ''}>Unir con el siguiente</button>
-      <span class="aviso" style="margin:0">Un acorde por pulso; vacío = sigue el anterior. «nc» = sin acorde.</span></div>
+      <span class="aviso" style="margin:0">Un acorde por pulso; vacío = sigue el anterior. ${p
+        ? `«–» = no toca, «${LINEA}» = línea o notas sueltas. Los pulsos de un compás cambian en todas las hojas.`
+        : '«nc» = sin acorde.'}</span></div>
       <datalist id="ed-lista">${usados.map((a) => `<option value="${esc(a.nombre)}">`).join('')}</datalist>`;
   }
   return h + '</div>';
@@ -511,7 +572,7 @@ function barraEdicion(usados) {
 
 async function enviarCorrecciones(cambio) {
   const k = E.c.correcciones || {};
-  const cuerpo = { compas: k.compas || null, acordes: k.acordes || [], unos: k.unos || null, ...cambio };
+  const cuerpo = { compas: k.compas || null, acordes: k.acordes || [], unos: k.unos || null, pistas: k.pistas || {}, ...cambio };
   try {
     const r = await api(`canciones/${encodeURIComponent(E.id)}/correcciones`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
     if (r.trabajo) { E.sel = -1; seguir(r.trabajo); return false; }
@@ -523,21 +584,23 @@ async function enviarCorrecciones(cambio) {
 async function guardarCompas() {
   const c = E.c, cp = c.compases[E.sel];
   if (!cp) return;
-  const bemol = T.tonalidad(c.tonalidad, 0).bemol;
-  const antes = pulsosDe(cp);
-  let actual = cp.beat > 0 ? pulsosDe(c.compases[E.sel - 1]).slice(-1)[0] : 'N.C.';
+  const inst = E.vista === 'armonia' ? null : pista(ID_INST[E.vista]);
+  const antes = pulsosHoja(cp, inst);
+  let actual = cp.beat > 0 ? pulsosHoja(c.compases[E.sel - 1], inst).slice(-1)[0] : inst ? '' : 'N.C.';
   const nuevos = [];
   for (const inp of $$('#ed-pulsos input')) {
-    const v = normalizarAcorde(inp.value);
+    const v = leerCasilla(inp.value, inst);
     inp.classList.toggle('mal', v === null);
     if (v === null) { inp.focus(); return; }
-    if (v) actual = v === 'N.C.' || !E.st ? v : T.transportar(v, -E.st, bemol);
+    if (v !== undefined) actual = v;
     nuevos.push(actual);
   }
   if (nuevos.some((a, j) => a !== antes[j])) {
-    const m = new Map(((c.correcciones || {}).acordes || []).map(([t, a]) => [pulsoEn(t), a]));
-    nuevos.forEach((a, j) => { if (a === c.base.acordes[cp.beat + j]) m.delete(cp.beat + j); else m.set(cp.beat + j, a); });
-    if (!await enviarCorrecciones({ acordes: [...m].map(([k, a]) => [c.beats[k], a]) })) return;
+    const detectado = inst ? detectados(inst) : c.base.acordes;
+    const m = new Map(correccionesDe(inst).map(([t, a]) => [pulsoEn(t), a]));
+    nuevos.forEach((a, j) => { if (a === detectado[cp.beat + j]) m.delete(cp.beat + j); else m.set(cp.beat + j, a); });
+    const lista = [...m].map(([k, a]) => [c.beats[k], a]);
+    if (!await enviarCorrecciones(inst ? { pistas: { ...(c.correcciones || {}).pistas, [inst.id]: lista } } : { acordes: lista })) return;
   }
   E.sel = Math.min(E.sel + 1, E.c.compases.length - 1);
   pintar();
@@ -559,7 +622,12 @@ function conectarEdicion(el) {
   const al = (id, fn) => { const b = $(id, el); if (b) b.onclick = fn; };
   al('#ed-salir', () => { E.edicion = false; pintar(); });
   al('#ed-deshacer', async () => {
-    if (confirm('¿Borrar todas las correcciones de acordes y compases de este tema y volver a lo que detectó la app?') && await enviarCorrecciones({ acordes: [], unos: null })) { E.sel = -1; pintar(); }
+    const p = E.vista === 'armonia' ? null : pista(ID_INST[E.vista]);
+    const ok = p
+      ? confirm('¿Borrar las correcciones de esta hoja y volver a lo que detectó la app? La armonía del tema y las otras hojas no cambian.')
+        && await enviarCorrecciones({ pistas: { ...(E.c.correcciones || {}).pistas, [p.id]: [] } })
+      : confirm('¿Borrar todas las correcciones de acordes y compases de este tema y volver a lo que detectó la app?') && await enviarCorrecciones({ acordes: [], unos: null });
+    if (ok) { E.sel = -1; pintar(); }
   });
   $$('#ed-metro button', el).forEach((b) => {
     b.onclick = () => {
@@ -1138,7 +1206,7 @@ function ponerPanel(visible) {
   document.body.classList.toggle('panel-oculto', !visible);
   $('#btn-panel').classList.toggle('on', visible);
   recordar('panel', visible ? 'fijo' : 'oculto');
-  if (E.c && E.vista in PARTITURAS) pintar();           // la partitura se re-acomoda al ancho nuevo
+  if (E.c && E.modo === 'partitura') pintar();          // la partitura se re-acomoda al ancho nuevo
 }
 const panelVisible = () => !document.body.classList.contains('panel-oculto');
 $('#btn-panel').onclick = () => ponerPanel(!panelVisible());
@@ -1202,8 +1270,15 @@ document.addEventListener('keydown', (ev) => {
   if (ev.code === 'Space' && E.c && !/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName)) { ev.preventDefault(); $('#btn-play').click(); }
   if (ev.code === 'Home' && E.c && !/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName)) { ev.preventDefault(); $('#btn-inicio').click(); }
 });
-$$('#pestanas [data-vista]').forEach((b) => { b.onclick = () => { E.vista = b.dataset.vista; E.edicion = false; $('#vista').scrollTop = 0; pintar(); }; });
-$('#btn-editar').onclick = () => { E.edicion = !E.edicion; E.sel = -1; E.vista = 'acordes'; pintar(); };
+$$('#pestanas [data-vista]').forEach((b) => {
+  b.onclick = () => {
+    E.vista = b.dataset.vista; E.edicion = false;
+    E.diapason = { guitarra: 'guitarra', piano: 'piano', bajo: 'bajo' }[E.vista] || E.diapason;   // escalas en su instrumento
+    $('#vista').scrollTop = 0; pintar();
+  };
+});
+// se edita la hoja de acordes de la pestaña abierta: la armonía del tema o lo que toca ese instrumento
+$('#btn-editar').onclick = () => { E.edicion = !E.edicion; E.sel = -1; pintar(); };
 function transportar(d) {
   const st = Math.max(-6, Math.min(6, E.st + d));
   if (st === E.st) return;
@@ -1228,7 +1303,7 @@ $('#est-guardar').onclick = async () => {
 };
 
 let redibujo = null;
-window.addEventListener('resize', () => { clearTimeout(redibujo); redibujo = setTimeout(() => { if (E.c && E.vista in PARTITURAS) pintar(); }, 250); });
+window.addEventListener('resize', () => { clearTimeout(redibujo); redibujo = setTimeout(() => { if (E.c && E.modo === 'partitura') pintar(); }, 250); });
 
 cargarLista();
 sondear();

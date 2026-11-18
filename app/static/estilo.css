@@ -85,6 +85,7 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .pestanas button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 9px 12px; color: var(--tenue); }
 .pestanas button.activa { color: var(--texto); border-bottom-color: var(--acento); }
 .pestanas .hueco { flex: 1; }
+.pestanas .divisor { align-self: center; width: 1px; height: 20px; margin: 0 10px 3px; background: var(--borde); }
 .pestanas .secundario { border: 1px solid var(--borde); border-radius: 6px; margin: 0 0 7px 6px; padding: 5px 10px; }
 
 .bienvenida { max-width: 640px; margin: 8vh auto; }
@@ -133,7 +134,7 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .ed-linea small { color: #777; }
 .editor button { background: #fff; color: #333; border: 1px solid #bbb; padding: 4px 10px; }
 .editor button.primario { background: var(--acento); border-color: var(--acento); color: #06281a; }
-.editor button:disabled { opacity: .4; cursor: default; }
+.editor button:disabled, .pestanas button:disabled { opacity: .4; cursor: default; }
 .editor .selector button { border: 0; }
 .editor .selector button.on { background: var(--tinta); color: #fff; }
 #ed-pulsos { display: inline-flex; gap: 6px; }

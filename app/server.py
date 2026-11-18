@@ -178,8 +178,9 @@ def estructura(cid):
 
 @app.put("/api/canciones/<cid>/correcciones")
 def correcciones(cid):
-    """Guarda las correcciones hechas a mano (acordes por pulso, dónde cae el 1 de cada compás, compás del
-    tema). Acordes y compases se aplican al instante; cambiar el compás del tema vuelve a analizar."""
+    """Guarda las correcciones hechas a mano (acordes por pulso del tema y de la hoja de cada instrumento,
+    dónde cae el 1 de cada compás, compás del tema). Acordes y compases se aplican al instante; cambiar el
+    compás del tema vuelve a analizar."""
     base = carpeta_de(cid)
     ruta = os.path.join(base, "analisis", "app.json")
     if not os.path.exists(ruta):
@@ -190,8 +191,10 @@ def correcciones(cid):
             "compas": int(d["compas"]) if d.get("compas") else None,
             "acordes": [[float(t), str(a)[:16]] for t, a in d.get("acordes") or []],
             "unos": [float(t) for t in d.get("unos") or []] or None,
+            "pistas": {p: [[round(float(t), 3), str(a)[:16]] for t, a in v]
+                       for p, v in (d.get("pistas") or {}).items() if p in ("guitar", "piano", "otros") and v},
         }
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, AttributeError):
         return jsonify({"error": "Correcciones mal formadas."}), 400
     if corr["compas"] not in (None, 2, 3, 4, 5, 6, 7):
         return jsonify({"error": "Compás no válido."}), 400
