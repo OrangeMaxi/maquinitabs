@@ -116,17 +116,22 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
 2. Cuando termina se abre sola. A la izquierda están las pistas (M = mutear, S = solo, volumen) y la lista
    de canciones. El botón de arriba a la izquierda muestra u oculta ese panel (oculto, la hoja ocupa toda
    la pantalla: útil en una tablet). La app recuerda la elección. La última pista es el **metrónomo**: M lo prende o apaga, y tiene su propio volumen.
-3. Pestañas:
-   - **Acordes y estructura**: la hoja de guitarra o de piano, con diagramas. Muestra solo lo que toca ese
+3. Pestañas: **Tema completo** (la armonía de todo el tema, sacada de la mezcla) y, separadas, una por
+   instrumento (**Guitarra, Piano, Otros, Bajo, Voz**). Al abrir un tema se elige sola la pista que más acordes
+   toca. Dentro de cada pestaña se elige qué ver:
+   - **Acordes**: la hoja de acordes con diagramas, con la estructura del tema. En **Tema completo** es la
+     armonía del tema. En Guitarra, Piano y Otros muestra solo lo que toca ese
      instrumento, sacado de su propia pista: el acorde que forman sus notas, ♪ si toca una línea o notas
      sueltas (están en la partitura) y – si no suena. Nunca se rellena con lo que toca el bajo u otro
-     instrumento. La armonía completa del tema se ve en **Editar hoja**. Clic en un compás para saltar ahí.
-   - **Guitarra / Piano / Otros / Bajo / Voz**: partitura (y tablatura en guitarra y bajo). «Otros» es lo que
-     no es voz, guitarra, piano, bajo ni batería (sintes, vientos, cuerdas…); también tiene su hoja de acordes.
-     Al analizar, la app busca en MusicBrainz y Wikipedia qué instrumentos tiene el tema: si los créditos son
-     de esa grabación, la pista toma ese nombre (p. ej. «Sintetizador, saxo y trompeta»); si solo están los
-     del disco, se mencionan como referencia. Sin internet (o con `SIN_INTERNET=1`) queda como «Otros».
-   - **Improvisación**: escalas recomendadas e ideas de arreglo por sección.
+     instrumento. Clic en un compás para saltar ahí. El bajo y la voz no tienen hoja de acordes.
+   - **Partitura**: nota por nota (y tablatura en guitarra y bajo). Tema completo no tiene partitura.
+   - **Improvisación**: escalas recomendadas e ideas de arreglo por sección; el diapasón arranca en el
+     instrumento de la pestaña.
+
+   «Otros» es lo que no es voz, guitarra, piano, bajo ni batería (sintes, vientos, cuerdas…). Al analizar, la
+   app busca en MusicBrainz y Wikipedia qué instrumentos tiene el tema: si los créditos son de esa grabación,
+   la pista toma ese nombre (p. ej. «Sintetizador, saxo y trompeta»); si solo están los del disco, se
+   mencionan como referencia. Sin internet (o con `SIN_INTERNET=1`) queda como «Otros».
 4. Abajo: volver al principio (tecla Inicio), reproducir (barra espaciadora), los botones **Cuenta**
    (un compás de clics antes de arrancar) y **Repetir** (verde = prendido; elegís desde qué compás hasta
    cuál, arranca con la sección que está sonando y el tramo queda marcado en la hoja) y transporte de tonalidad
@@ -135,14 +140,21 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
 
 ### Corregir la hoja
 
-El compás (3/4 o 4/4) se detecta solo. Si quedó mal, o hay acordes equivocados, tocá **Editar hoja**:
+El compás (3/4 o 4/4) se detecta solo. Si quedó mal, o hay acordes equivocados, tocá **Editar hoja**. Edita la
+hoja de acordes de la pestaña abierta: en **Tema completo**, la armonía del tema (la base de las demás hojas, de la
+improvisación y del cifrado de las partituras); en Guitarra, Piano u Otros, solo lo que toca ese instrumento.
+Solo se activa en la vista **Acordes**: la partitura no se edita a mano y la improvisación sale de los acordes
+(por eso tampoco está en Bajo y Voz, que no tienen hoja de acordes).
 
 - **Compás del tema**: 3/4 o 4/4. Vuelve a analizar el tema (menos de un minuto).
 - Clic en un compás y escribí los acordes, una casilla por pulso. Vacía = sigue el acorde anterior;
-  `nc` = sin acorde. Acepta cifrado americano o solfeo (`Am7`, `lam7`, `Sib`). Enter guarda y pasa al siguiente.
+  `nc` = sin acorde (en la hoja de un instrumento, `–` o `nc` = no toca y `♪` = línea o notas sueltas).
+  Acepta cifrado americano o solfeo (`Am7`, `lam7`, `Sib`). Enter guarda y pasa al siguiente.
 - **Escuchar** reproduce solo ese compás.
-- **Pulsos del compás (− / +)**, **Partir en dos** y **Unir con el siguiente** mueven las barras de compás.
-- **Volver a lo detectado** borra todas las correcciones del tema.
+- **Pulsos del compás (− / +)**, **Partir en dos** y **Unir con el siguiente** mueven las barras de compás
+  (de todo el tema, en todas las hojas).
+- **Volver a lo detectado** borra las correcciones de la hoja abierta: en Tema completo, las de acordes y compases
+  del tema; en un instrumento, solo las de ese instrumento.
 
 **Secciones** permite cambiar los nombres y los tiempos de las partes del tema.
 

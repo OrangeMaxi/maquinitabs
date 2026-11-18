@@ -254,8 +254,10 @@ def notas_de(ruta, cache, bordes, afin, fmin, fmax, frame_length, rango=None):
 
 # ---------------------------------------------------------------- correcciones a mano
 def leer_correcciones(base):
-    """correcciones.json del tema: {"compas": 3|4|None, "acordes": [[t, nombre]…], "unos": [t…]|None}.
-    Todo va por tiempo (segundos) y no por número de pulso, para que sobreviva a un re-análisis."""
+    """correcciones.json del tema: {"compas": 3|4|None, "acordes": [[t, nombre]…], "unos": [t…]|None,
+    "pistas": {"guitar"|"piano"|"otros": [[t, nombre]…]}}. "acordes" corrige la armonía del tema; "pistas", la
+    hoja de cada instrumento ("" = no toca, "♪" = línea). Todo va por tiempo (segundos) y no por número de
+    pulso, para que sobreviva a un re-análisis."""
     ruta = os.path.join(base, "correcciones.json")
     d = {}
     if os.path.exists(ruta):
@@ -264,12 +266,13 @@ def leer_correcciones(base):
                 d = json.load(f)
         except (OSError, ValueError):
             d = {}
-    return {"compas": d.get("compas") or None, "acordes": d.get("acordes") or [], "unos": d.get("unos") or None}
+    return {"compas": d.get("compas") or None, "acordes": d.get("acordes") or [], "unos": d.get("unos") or None,
+            "pistas": d.get("pistas") or {}}
 
 
 def guardar_correcciones(base, corr):
     ruta = os.path.join(base, "correcciones.json")
-    if not (corr.get("compas") or corr.get("acordes") or corr.get("unos")):
+    if not (corr.get("compas") or corr.get("acordes") or corr.get("unos") or corr.get("pistas")):
         if os.path.exists(ruta):
             os.remove(ruta)
         return
@@ -334,7 +337,8 @@ def aplicar_correcciones(out, corr):
             p["activa"] = base["activa"][p["id"]]
         else:   # compases movidos a mano: la pista "toca" en un compás si suena en la mitad de sus pulsos
             p["activa"] = [int(2 * sum(p["pulsos"][c["beat"]: c["beat"] + c["pulsos"]]) >= c["pulsos"]) for c in compases]
-    out["correcciones"] = {"compas": corr.get("compas") or None, "acordes": hechas, "unos": unos}
+    out["correcciones"] = {"compas": corr.get("compas") or None, "acordes": hechas, "unos": unos,
+                           "pistas": {p: v for p, v in (corr.get("pistas") or {}).items() if v}}
     return out
 
 
