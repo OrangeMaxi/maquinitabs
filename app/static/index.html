@@ -4,6 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Maquinitabs</title>
+  <!-- tema y hoja antes de pintar, para que no parpadee (las claves son las de recordar() en app.js) -->
+  <script>
+    try {
+      document.documentElement.dataset.tema = localStorage.getItem('maquinitabs.pref.tema') || 'oscuro';
+      document.documentElement.dataset.hoja = localStorage.getItem('maquinitabs.pref.hoja') || 'clara';
+    } catch (e) { /* sin almacenamiento */ }
+  </script>
   <link rel="stylesheet" href="estilo.css">
 </head>
 <body>
@@ -11,13 +18,13 @@
     <button id="btn-panel" class="btn-panel" title="Mostrar u ocultar el panel de pistas y canciones" aria-label="Panel lateral">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg>
     </button>
-    <div class="marca">
+    <button type="button" class="marca" id="btn-ajustes" title="Configuración" aria-label="Configuración">
       <svg class="engranajes" viewBox="0 0 40 30" width="40" height="30" aria-hidden="true">
         <g class="eng-grande"><path data-engranaje="12.5,15,11,8.6,10"/><circle cx="12.5" cy="15" r="3.4"/></g>
         <g class="eng-chico"><path data-engranaje="29.1,15,7.4,5.6,7"/><circle cx="29.1" cy="15" r="2.2"/></g>
       </svg>
       <b>Maquini<span>tabs</span></b>
-    </div>
+    </button>
     <form id="form-url">
       <input id="url" type="url" placeholder="Pegá un link de YouTube de una canción…" autocomplete="off" required>
       <button type="button" id="btn-subir" class="subir" title="Subir un archivo de audio (mp3, m4a, wav, flac…). Nombre ideal: «Artista - Tema.mp3»" aria-label="Subir un archivo de audio">
@@ -61,17 +68,21 @@
 
     <main>
       <nav class="pestanas" id="pestanas" hidden>
-        <button data-vista="armonia" class="activa" title="La armonía completa del tema, sacada de la mezcla de todas las pistas">Tema completo</button>
-        <span class="divisor" aria-hidden="true"></span>
-        <button data-vista="guitarra" title="Acordes, partitura y tablatura de la guitarra">Guitarra</button>
-        <button data-vista="piano" title="Acordes y partitura del piano o teclado">Piano</button>
-        <button data-vista="otros" hidden title="Sintes, vientos, cuerdas: lo que no es voz, guitarra, piano, bajo ni batería">Otros</button>
-        <button data-vista="bajo" title="Partitura y tablatura del bajo">Bajo</button>
-        <button data-vista="voz" title="Melodía de la voz">Voz</button>
+        <div class="tabs">
+          <button data-vista="armonia" class="activa" title="La armonía completa del tema, sacada de la mezcla de todas las pistas">Tema completo</button>
+          <span class="divisor" aria-hidden="true"></span>
+          <button data-vista="guitarra" title="Acordes, partitura y tablatura de la guitarra">Guitarra</button>
+          <button data-vista="piano" title="Acordes y partitura del piano o teclado">Piano</button>
+          <button data-vista="otros" hidden title="Sintes, vientos, cuerdas: lo que no es voz, guitarra, piano, bajo ni batería">Otros</button>
+          <button data-vista="bajo" title="Partitura y tablatura del bajo">Bajo</button>
+          <button data-vista="voz" title="Melodía de la voz">Voz</button>
+        </div>
         <span class="hueco"></span>
-        <button id="btn-editar" class="secundario" title="Corregir acordes y compases escuchando el tema">Editar hoja</button>
-        <button id="btn-estructura" class="secundario" title="Corregir los nombres y tiempos de las secciones">Secciones</button>
-        <button id="btn-imprimir" class="secundario">Imprimir</button>
+        <div class="acciones-hoja">
+          <button id="btn-editar" class="secundario" title="Corregir acordes y compases escuchando el tema">Editar hoja</button>
+          <button id="btn-estructura" class="secundario" title="Corregir los nombres y tiempos de las secciones">Secciones</button>
+          <button id="btn-imprimir" class="secundario">Imprimir</button>
+        </div>
       </nav>
       <div id="vista">
         <div class="bienvenida">
@@ -126,6 +137,36 @@
       Al guardar se vuelve a analizar (1–2 min).</p>
     <textarea id="txt-estructura" rows="14" spellcheck="false"></textarea>
     <div class="acciones"><button id="est-cancelar" class="secundario">Cancelar</button><button id="est-guardar" class="primario">Guardar y re-analizar</button></div>
+  </dialog>
+
+  <dialog id="dlg-ajustes">
+    <h3>Configuración</h3>
+    <p>Se guarda en este navegador: cada uno puede tener la suya en su celular o su compu.</p>
+    <div class="ajustes">
+      <div class="ajuste"><span>Tema</span>
+        <div class="selector" data-pref="tema"><button data-v="claro">Claro</button><button data-v="oscuro">Oscuro</button><button data-v="sistema">Del sistema</button></div></div>
+      <div class="ajuste"><span>Hoja</span>
+        <div class="selector" data-pref="hoja"><button data-v="clara">Clara</button><button data-v="oscura">Oscura</button></div>
+        <small>Oscura: para ensayar o tocar con poca luz.</small></div>
+      <div class="ajuste"><span>Tamaño de la hoja</span>
+        <div class="selector" data-pref="letra"><button data-v="0.85">Chica</button><button data-v="1">Normal</button><button data-v="1.25">Grande</button><button data-v="1.5">Muy grande</button></div>
+        <small>Acordes, diagramas y cifrado de la partitura.</small></div>
+      <div class="ajuste"><span>Compases por renglón</span>
+        <div class="selector" data-pref="cols"><button data-v="2">2</button><button data-v="4">4</button><button data-v="8">8</button></div>
+        <small>En la hoja de acordes.</small></div>
+      <div class="ajuste"><span>Cifrado</span>
+        <div class="selector" data-pref="cifrado"><button data-v="americano">Americano (C, Am)</button><button data-v="latino">Latino (Do, Lam)</button></div></div>
+      <div class="ajuste"><span>Seguir la reproducción</span>
+        <div class="selector" data-pref="seguir"><button data-v="si">Sí</button><button data-v="no">No</button></div>
+        <small>La hoja se desplaza sola hasta el compás que suena.</small></div>
+      <div class="ajuste"><span>Silbato al analizar</span>
+        <div class="selector" data-pref="silbato"><button data-v="si">Sí</button><button data-v="no">No</button></div></div>
+    </div>
+    <div class="acciones">
+      <small class="version">Maquinitabs <span id="version"></span> ·
+        <a href="https://github.com/OrangeMaxi/maquinitabs/blob/main/CHANGELOG.md" target="_blank" rel="noopener">novedades</a></small>
+      <button id="ajustes-listo" class="primario">Listo</button>
+    </div>
   </dialog>
 
   <script src="vendor/vexflow.js"></script>

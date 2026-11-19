@@ -1,10 +1,26 @@
 :root {
   --fondo: #14161b; --panel: #1c1f26; --panel2: #252933; --borde: #323745; --texto: #e8eaf0; --tenue: #9299a8;
+  --texto2: #c4c9d4; --error: #ff8f8a; --eng1: #f4f5f8; --eng2: #b4b9c4; --sombra: 0 6px 30px #0007;
   --acento: #19c37d; --acento2: #f5a524; --papel: #fdfdfb; --tinta: #1b1d22;
+  color-scheme: dark;
+}
+/* tema claro (Configuración): solo cambia la interfaz; la hoja sigue siendo papel */
+:root[data-tema="claro"] {
+  --fondo: #e9ecf0; --panel: #fbfbfc; --panel2: #eceef2; --borde: #d2d7df; --texto: #1b1d22; --tenue: #5f6672;
+  --texto2: #3a3f4a; --error: #c0392b; --eng1: #3a3f4a; --eng2: #8a919e; --sombra: 0 3px 14px #0000001f; color-scheme: light;
+}
+@media (prefers-color-scheme: light) {
+  :root[data-tema="sistema"] {
+    --fondo: #e9ecf0; --panel: #fbfbfc; --panel2: #eceef2; --borde: #d2d7df; --texto: #1b1d22; --tenue: #5f6672;
+    --texto2: #3a3f4a; --error: #c0392b; --eng1: #3a3f4a; --eng2: #8a919e; --sombra: 0 3px 14px #0000001f; color-scheme: light;
+  }
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }         /* que `display: flex` no le gane al atributo hidden (reproductor, pestañas) */
 html, body { height: 100%; margin: 0; }
 body { background: var(--fondo); color: var(--texto); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+/* en el celular, el alto visible sin las barras del navegador (si no, el reproductor queda tapado) */
+body { height: 100dvh; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; border: 1px solid var(--borde); background: var(--panel2); border-radius: 6px; padding: 6px 12px; }
 button:hover { border-color: var(--tenue); }
@@ -15,13 +31,17 @@ h4 small { text-transform: none; letter-spacing: 0; color: var(--acento2); margi
 
 .barra-sup { display: flex; align-items: center; gap: 18px; padding: 8px 18px; background: var(--panel); border-bottom: 1px solid var(--borde); }
 .marca { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 17px; white-space: nowrap; }
+/* el logo es el botón de Configuración */
+button.marca { border: 0; background: none; padding: 2px 4px; color: var(--texto); }
+button.marca:hover .engranajes { filter: brightness(1.25) drop-shadow(0 0 3px #19c37d66); }
+button.marca:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
 .marca span { color: var(--acento); font-weight: 400; }
 .btn-panel { display: grid; place-items: center; padding: 5px; background: transparent; color: var(--tenue); }
 .btn-panel:hover, .btn-panel.on { color: var(--texto); }
 
 /* engranajes del logo: cada tanto dan una vuelta; mientras se analiza un tema giran sin parar */
-.engranajes .eng-grande { fill: #f4f5f8; transform-origin: 12.5px 15px; animation: giro-grande 9s ease-in-out infinite; }
-.engranajes .eng-chico { fill: #b4b9c4; transform-origin: 29.1px 15px; animation: giro-chico 9s ease-in-out infinite; }
+.engranajes .eng-grande { fill: var(--eng1); transform-origin: 12.5px 15px; animation: giro-grande 9s ease-in-out infinite; }
+.engranajes .eng-chico { fill: var(--eng2); transform-origin: 29.1px 15px; animation: giro-chico 9s ease-in-out infinite; }
 .engranajes circle { fill: var(--panel); }
 @keyframes giro-grande { 0%, 78% { transform: rotate(0deg); } 100% { transform: rotate(72deg); } }
 @keyframes giro-chico { 0%, 78% { transform: rotate(25.7deg); } 100% { transform: rotate(-77.1deg); } }
@@ -68,7 +88,7 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .trabajo .prog { height: 5px; background: var(--fondo); border-radius: 3px; margin-top: 6px; overflow: hidden; }
 .trabajo .prog i { display: block; height: 100%; background: var(--acento); transition: width .6s; }
 .trabajo.error { border-color: #d9534f; }
-.trabajo.error span { color: #ff8f8a; }
+.trabajo.error span { color: var(--error); }
 
 .pista { display: grid; grid-template-columns: 22px 1fr auto auto; gap: 6px 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--borde); }
 .pista .icono { width: 22px; height: 22px; display: grid; place-items: center; }
@@ -82,7 +102,8 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .pista.apagada .nombre { opacity: .45; }
 
 .pestanas { display: flex; gap: 4px; padding: 8px 22px 0; border-bottom: 1px solid var(--borde); background: var(--panel); align-items: flex-end; }
-.pestanas button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 9px 12px; color: var(--tenue); }
+.pestanas .tabs, .pestanas .acciones-hoja { display: flex; gap: 4px; align-items: flex-end; }
+.pestanas button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 9px 12px; color: var(--tenue); white-space: nowrap; }
 .pestanas button.activa { color: var(--texto); border-bottom-color: var(--acento); }
 .pestanas .hueco { flex: 1; }
 .pestanas .divisor { align-self: center; width: 1px; height: 20px; margin: 0 10px 3px; background: var(--borde); }
@@ -90,16 +111,19 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 
 .bienvenida { max-width: 640px; margin: 8vh auto; }
 .bienvenida h1 { font-size: 28px; line-height: 1.2; }
-.bienvenida p { color: #c4c9d4; font-size: 15px; }
+.bienvenida p { color: var(--texto2); font-size: 15px; }
 .nota { color: var(--tenue) !important; font-size: 13px !important; }
 
 /* ------------------------------------------------ hoja (papel) */
-.hoja { background: var(--papel); color: var(--tinta); border-radius: 8px; padding: 26px 30px 40px; max-width: 1180px; margin: 0 auto; box-shadow: 0 6px 30px #0007; }
+.hoja { background: var(--papel); color: var(--tinta); border-radius: 8px; padding: 26px 30px 40px; max-width: 1180px; margin: 0 auto; box-shadow: var(--sombra); }
+/* hoja oscura (Configuración): se invierte el papel entero, partitura incluida; el giro de tono devuelve los colores */
+:root[data-hoja="oscura"] .hoja { filter: invert(.9) hue-rotate(180deg); box-shadow: none; }
 .hoja header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; border-bottom: 2px solid var(--tinta); padding-bottom: 8px; margin-bottom: 6px; }
 .hoja header h2 { margin: 0; font-size: 24px; }
 .hoja header .artista { font-size: 16px; color: #555; }
 .hoja header .datos { margin-left: auto; font-size: 13px; color: #444; }
-.hoja h3 { margin: 22px 0 6px; font-size: 14px; }
+/* --letra = tamaño de la hoja (Configuración): acordes, diagramas, secciones y cifrado de la partitura */
+.hoja h3 { margin: 22px 0 6px; font-size: calc(14px * var(--letra, 1)); }
 .hoja h3 span { background: var(--tinta); color: #fff; border-radius: 4px; padding: 2px 9px; }
 .hoja h3 small { font-weight: 400; color: #777; margin-left: 8px; }
 .aviso { font-size: 12px; color: #777; margin: 6px 0 0; }
@@ -109,6 +133,8 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .selector button.on { background: var(--tinta); color: #fff; }
 .diagramas { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 12px 0 4px; align-items: flex-end; }
 .diagramas .cont { border-radius: 6px; padding: 2px; border: 2px solid transparent; }
+.diagramas .diagrama { width: calc(86px * var(--letra, 1)); height: auto; }
+.diagramas .teclado { width: calc(152px * var(--letra, 1)); height: auto; }
 .diagramas .cont.actual { border-color: var(--acento); background: #e9fbf2; }
 .dg-nombre { font: 700 12px "Segoe UI", sans-serif; fill: #1b1d22; }
 .dg-linea { stroke: #555; stroke-width: 1; } .dg-cejuela { stroke: #111; stroke-width: 3.5; }
@@ -118,7 +144,7 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .tc-on { fill: #19c37d; } .tc-raiz { fill: #f5a524; }
 
 .fila-compases { position: relative; display: grid; grid-template-columns: repeat(var(--cols, 4), 1fr); border-left: 2px solid var(--tinta); margin-bottom: 8px; }
-.compas { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; align-items: center; min-height: 46px; padding: 0 8px; border-right: 2px solid var(--tinta); cursor: pointer; font-size: 20px; font-weight: 600; }
+.compas { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; align-items: center; min-height: calc(46px * var(--letra, 1)); padding: 0 8px; border-right: 2px solid var(--tinta); cursor: pointer; font-size: calc(20px * var(--letra, 1)); font-weight: 600; }
 .compas:hover { background: #f0f0ea; }
 .compas.actual { background: #d9f7e8; }
 .compas.calla { color: #a9a9a9; }
@@ -151,7 +177,7 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .fila-partitura .zona { position: absolute; top: 0; bottom: 0; cursor: pointer; border-radius: 4px; }
 .fila-partitura .zona:hover { background: #0000000a; }
 .fila-partitura .zona.actual { background: #19c37d22; }
-.fila-partitura .cifrado { position: absolute; top: 8px; font-weight: 700; font-size: 14px; pointer-events: none; white-space: nowrap; }
+.fila-partitura .cifrado { position: absolute; top: 8px; font-weight: 700; font-size: calc(14px * var(--letra, 1)); pointer-events: none; white-space: nowrap; }
 .fila-partitura .numero { position: absolute; top: 26px; font-size: 10px; color: #888; }
 
 /* ------------------------------------------------ improvisación */
@@ -175,6 +201,7 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .impro .fuera { color: #b35c00; font-weight: 700; }
 .impro ul { padding-left: 20px; } .impro li { margin: 6px 0; }
 .dos { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.desliza { overflow-x: auto; }
 
 /* ------------------------------------------------ reproductor */
 /* reproductor: mando (inicio, play, tiempo, barra) a lo ancho; acorde, interruptores y tonalidad repartidos parejo */
@@ -217,26 +244,145 @@ dialog h3 { margin: 0 0 6px; } dialog p { color: var(--tenue); font-size: 13px; 
 dialog code { background: var(--fondo); padding: 1px 5px; border-radius: 4px; }
 dialog textarea { width: 100%; background: var(--fondo); border: 1px solid var(--borde); border-radius: 6px; padding: 8px; font-family: Consolas, monospace; }
 dialog .acciones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+/* Configuración */
+.ajuste { display: grid; grid-template-columns: 170px 1fr; gap: 4px 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--borde); }
+.ajuste > span { font-weight: 600; }
+.ajuste small { grid-column: 2; color: var(--tenue); font-size: 12px; }
+dialog .selector { border-color: var(--borde); justify-self: start; }
+dialog .selector button { background: var(--panel2); color: var(--texto); padding: 5px 11px; font-size: 13px; }
+dialog .selector button + button { border-left: 1px solid var(--borde); }
+dialog .selector button.on { background: var(--acento); color: #06281a; font-weight: 600; }
+dialog .version { margin-right: auto; align-self: center; color: var(--tenue); font-size: 12px; }
+dialog .version a { color: var(--tenue); }
 
 @media (max-width: 900px) {
-  /* pantalla angosta: pistas arriba y hoja abajo, cada una con su propio scroll */
-  .cuerpo { flex-direction: column; }
-  aside { width: auto; border-right: 0; border-bottom: 1px solid var(--borde); max-height: 36vh; }
+  /* pantalla angosta: el panel de pistas y canciones es un cajón que se abre encima de la hoja */
+  aside { position: absolute; top: 0; bottom: 0; left: 0; z-index: 20; width: min(340px, 88vw); box-shadow: 8px 0 30px #0009; }
+  body:not(.panel-oculto) .cuerpo::after { content: ""; position: absolute; inset: 0; z-index: 19; background: #000a; }
   #vista { padding: 10px; } .hoja { padding: 16px 12px; }
   .opciones { flex-direction: row; gap: 12px; flex-wrap: wrap; }
-  .pista { grid-template-columns: 22px 84px 1fr auto auto; padding: 4px 0; }
+  .pista { grid-template-columns: 22px 84px 1fr auto auto; padding: 6px 0; }
   .reproductor { gap: 10px 18px; justify-content: space-around; padding: 8px 12px; }
   .mando { flex-basis: 100%; }
   .barra-sup { gap: 10px; padding: 8px 10px; }
   .pista > * { grid-row: 1; } .pista input[type=range] { grid-column: 3; } .pista .m { grid-column: 4; } .pista .s { grid-column: 5; }
   .pista .nombre small { display: none; }
-  .reproductor { flex-wrap: wrap; } .pestanas { overflow-x: auto; }
+  .pista button { min-height: 32px; min-width: 34px; }
+  .reproductor { flex-wrap: wrap; } .pestanas .tabs { overflow-x: auto; scrollbar-width: none; }
+  .pestanas .tabs::-webkit-scrollbar { display: none; }
+  html { touch-action: manipulation; }          /* sin zoom por doble toque: los botones responden al instante */
+}
+
+@media (max-width: 600px) {
+  /* celular: todo a mano con el pulgar y la hoja con el mayor alto posible */
+  .barra-sup { gap: 6px; padding: 6px 8px; }
+  .marca b { display: none; }
+  .marca .engranajes { width: 32px; height: 24px; }
+  #form-url { gap: 2px; }
+  #form-url input, dialog textarea, .bucle select { font-size: 16px; }   /* con menos de 16px el iPhone hace zoom al tocarlos */
+  #form-url input { padding: 6px 10px; }
+  .subir { padding: 6px 4px; }
+  .locomotora svg { width: 44px; height: 32px; }
+
+  /* pestañas deslizables a lo ancho y, abajo, las acciones de la hoja */
+  .pestanas { flex-wrap: wrap; padding: 0; gap: 0; }
+  .pestanas .tabs { flex: 1 1 100%; padding: 2px 6px 0; }
+  .pestanas .tabs button { padding: 9px 10px; }
+  .pestanas .divisor { margin: 0 4px 3px; }
+  .pestanas .hueco { display: none; }
+  .pestanas .acciones-hoja { flex: 1 1 100%; justify-content: flex-end; align-items: center; gap: 6px; padding: 5px 8px; border-top: 1px solid var(--borde); }
+  .pestanas .secundario { margin: 0; padding: 4px 10px; font-size: 13px; }
+
+  /* reproductor en dos renglones: mando; acorde, cuenta, repetir y tonalidad. Desde/hasta solo con Repetir prendido */
+  .reproductor { gap: 6px 8px; padding: 6px 10px 8px; justify-content: space-between; }
+  .mando { gap: 10px; min-width: 0; }
+  .play { width: 42px; height: 42px; }
+  .inicio { width: 34px; height: 34px; }
+  .acorde-actual { flex: 1; min-width: 0; text-align: left; }
+  .acorde-actual small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .acorde-actual b { font-size: 20px; }
+  .interruptor small { display: none; }
+  .interruptor svg { width: 38px; height: 38px; }
+  .bucle { display: contents; }
+  .bucle .rango { order: 10; flex: 1 1 100%; min-width: 0; flex-direction: row; gap: 10px; }
+  .bucle:not(.on) .rango { display: none; }
+  .bucle .rango span { flex: 1; min-width: 0; }
+  .bucle select { flex: 1; min-width: 0; max-width: none; padding: 2px 4px; }
+  .transporte { gap: 4px; }
+  .transporte div { min-width: 40px; }
+  .transporte small { display: none; }
+  .transporte button { width: 34px; height: 34px; }
+
+  /* hoja */
+  #vista { padding: 8px; }
+  .hoja { padding: 14px 10px 24px; border-radius: 6px; }
+  .hoja header { gap: 4px 10px; }
+  .hoja header h2 { font-size: 20px; }
+  .hoja header .artista { font-size: 14px; }
+  .hoja header .datos { font-size: 12px; }
+  #sel-modo { display: flex; width: 100%; }
+  #sel-modo button { flex: 1; padding: 7px 4px; white-space: nowrap; }
+  #sel-modo .largo { display: none; }
+  /* compases con más de un acorde: cada uno ocupa lo que necesita (no lo proporcional a sus pulsos), si no se cortan */
+  .compas { grid-template-columns: none !important; grid-auto-columns: auto; justify-content: space-between; column-gap: 4px;
+    font-size: calc(14px * var(--letra, 1)); min-height: calc(40px * var(--letra, 1)); padding: 0 3px; letter-spacing: -.02em; }
+  .compas > span { min-width: 0; overflow: hidden; white-space: nowrap; }
+  .compas sup { font-size: 8.5px; left: 3px; }
+  .bienvenida { margin: 4vh auto; } .bienvenida h1 { font-size: 23px; }
+
+  /* edición: el editor queda pegado arriba, así que lo más compacto posible */
+  .editor { top: -8px; margin: 10px -4px 6px; padding: 6px 8px; }
+  .ed-linea { gap: 6px 8px; padding: 3px 0; }
+  .editor .aviso { font-size: 11px; }
+  #ed-pulsos { display: flex; flex-wrap: wrap; }
+  #ed-pulsos input { width: 64px; }
+
+  /* configuración: cada opción en su renglón */
+  dialog { padding: 14px; }
+  .ajuste { grid-template-columns: 1fr; }
+  .ajuste small { grid-column: 1; }
+  dialog .selector { flex-wrap: wrap; }
+
+  /* improvisación: el diapasón se desliza a lo ancho en vez de achicarse hasta no leerse; la tabla, una tarjeta por sección */
+  .desliza .diapason { min-width: 620px; }
+  .tarjetas { grid-template-columns: 1fr; }
+  .impro table, .impro tbody, .impro tr, .impro td { display: block; }
+  .impro tr:first-child { display: none; }
+  .impro tr { border: 1px solid #ddd; border-radius: 8px; padding: 6px 2px; margin-bottom: 8px; }
+  .impro td { border: 0; padding: 3px 8px; }
+  .impro td.ac { white-space: normal; }
+  .impro td[data-l]::before { content: attr(data-l); display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #777; }
+}
+
+@media (max-width: 600px), (max-height: 500px) {
+  /* celular (parado o acostado): diagramas en una tira que se desliza, en vez de varias filas antes de la hoja */
+  .diagramas { flex-wrap: nowrap; overflow-x: auto; gap: 2px 4px; padding-bottom: 4px; }
+  .diagramas .cont { flex: none; }
+  .diagramas .diagrama { width: calc(66px * var(--letra, 1)); }
+  .diagramas .teclado { width: calc(118px * var(--letra, 1)); }
+}
+
+@media (max-height: 500px) and (min-width: 601px) {
+  /* celular acostado: barras finas y el reproductor en un solo renglón; desde/hasta solo con Repetir prendido */
+  .barra-sup { padding: 4px 10px; }
+  .pestanas button { padding: 7px 12px; }
+  .pestanas .secundario { margin-bottom: 5px; padding: 3px 10px; }
+  .mando { flex-basis: auto; min-width: 200px; }
+  .reproductor { padding: 4px 12px; gap: 6px 12px; }
+  .play { width: 40px; height: 40px; }
+  .interruptor small, .transporte small { display: none; }
+  .interruptor svg { width: 36px; height: 36px; }
+  .acorde-actual { min-width: 64px; }
+  .bucle:not(.on) .rango { display: none; }
+  .bucle select { max-width: 130px; }
+  #vista { padding: 8px; }
+  .hoja { padding: 14px 16px 24px; }
 }
 @media print {
   body { background: #fff; display: block; height: auto; }
   .barra-sup, aside, .pestanas, .reproductor, .cursor, .no-imprimir { display: none !important; }
   .cuerpo, main, #vista { display: block; overflow: visible; padding: 0; }
-  .hoja { box-shadow: none; max-width: none; padding: 0; }
+  .hoja { box-shadow: none; max-width: none; padding: 0; filter: none !important; }
   .compas.actual, .zona.actual { background: none !important; }
   .compas.en-bucle, .zona.en-bucle { box-shadow: none !important; }
   .fila-compases, .fila-partitura, h3 { break-inside: avoid; } h3 { break-after: avoid; }

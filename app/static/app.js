@@ -73,6 +73,7 @@ $('#archivo').onchange = async () => {
   const datos = new FormData();
   datos.append('archivo', f);
   $('#btn-subir').disabled = true;
+  if (cajon()) ponerPanel(true);                       // el progreso se ve en el panel
   $('#trabajos').insertAdjacentHTML('afterbegin', `<div class="trabajo" id="subiendo"><b>${esc(f.name)}</b><span>Subiendo…</span></div>`);
   try {
     const r = await fetch('/api/canciones/subir', { method: 'POST', body: datos });
@@ -91,6 +92,7 @@ $('#form-url').onsubmit = async (ev) => {
   try {
     seguir(await api('canciones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: $('#url').value }) }));
     $('#url').value = '';
+    if (cajon()) ponerPanel(true);
   } catch (e) { alert(e.message); }
 };
 
@@ -109,6 +111,7 @@ async function abrir(id) {
   A.pos = 0;
   $$('#lista li').forEach((li) => li.classList.toggle('activa', li.dataset.id === id));
   ['#pestanas', '#reproductor', '#panel-pistas'].forEach((s) => { $(s).hidden = false; });
+  if (cajon()) ponerPanel(false);
   $('#t-total').textContent = mmss(c.duracion);
   document.title = `${c.titulo} · Maquinitabs`;
   pintarMezclador();
@@ -348,6 +351,19 @@ function recordar(clave, valor) {
   } catch (e) { /* sin almacenamiento */ }
   return null;
 }
+// configuración de este navegador (se abre con los engranajes del logo). Tema y hoja ya los pone index.html
+// antes de pintar la página, para que no parpadee.
+const PREF = { tema: 'oscuro', hoja: 'clara', letra: '1', cols: '4', cifrado: 'americano', seguir: 'si', silbato: 'si' };
+const pref = (k) => recordar('pref.' + k) ?? PREF[k];
+function aplicarPreferencias() {
+  const r = document.documentElement;
+  r.dataset.tema = pref('tema');
+  r.dataset.hoja = pref('hoja');
+  r.style.setProperty('--letra', pref('letra'));
+  r.style.setProperty('--cols', pref('cols'));
+  T.ponerCifrado(pref('cifrado'));
+}
+aplicarPreferencias();
 function gananciaMetro() {             // a esta van los clics del metrónomo (la cuenta previa va directo)
   const ctx = ctxAudio();
   if (!A.gMetro) { A.gMetro = ctx.createGain(); A.gMetro.connect(ctx.destination); }
@@ -392,7 +408,7 @@ function pintar() {
   if (!E.c) return;
   E.geo = []; E.compasActual = -1;
   const t = ton();
-  $('#tonalidad').textContent = t.nombre;
+  $('#tonalidad').textContent = T.ver(t.nombre);
   $('#st-valor').textContent = E.st ? `${E.st > 0 ? '+' : ''}${E.st} semitono${Math.abs(E.st) === 1 ? '' : 's'}` : 'original';
   // pestaña de la pista «otros»: solo si el análisis la transcribió, con el nombre de sus instrumentos
   const tabOtros = $('#pestanas [data-vista="otros"]');
@@ -432,14 +448,14 @@ const MODOS = {
 };
 const NOMBRE_MODO = { acordes: 'Acordes', partitura: 'Partitura', impro: 'Improvisación' };
 function selectorModos() {
-  const partitura = E.vista === 'guitarra' || E.vista === 'bajo' ? 'Partitura y tablatura' : 'Partitura';
+  const partitura = E.vista === 'guitarra' || E.vista === 'bajo' ? 'Partitura<span class="largo"> y tablatura</span>' : 'Partitura';
   return `<div class="no-imprimir" style="margin-top:12px"><div class="selector" id="sel-modo">${MODOS[E.vista].map((m) =>
     `<button data-m="${m}">${m === 'partitura' ? partitura : NOMBRE_MODO[m]}</button>`).join('')}</div></div>`;
 }
 function cabecera() {
   const c = E.c;
   return `<header><h2>${esc(c.titulo)}</h2><span class="artista">${esc(c.artista)}</span>
-    <span class="datos">${Math.round(c.tempo)} BPM · ${c.compas}/4 · Tonalidad <b>${ton().nombre}</b>${E.st ? ` (original ${T.tonalidad(c.tonalidad, 0).nombre})` : ''}</span></header>`;
+    <span class="datos">${Math.round(c.tempo)} BPM · ${c.compas}/4 · Tonalidad <b>${T.ver(ton().nombre)}</b>${E.st ? ` (original ${T.ver(T.tonalidad(c.tonalidad, 0).nombre)})` : ''}</span></header>`;
 }
 function tituloSeccion(s) {
   const c = E.c.compases[s.ini];
@@ -465,7 +481,7 @@ function vistaAcordes(el) {
       : `Solo lo que toca ${el_inst}, sacado de su pista: – no suena, ${LINEA} toca una línea o notas sueltas (ver «Partitura»).${
         E.vista === 'otros' ? ' ' + avisoOtros() : ''}`}</p>`;
   h += `<div class="diagramas">${usados.map((a) => `<div class="cont" data-acorde="${esc(a.nombre)}">${
-    E.vista === 'guitarra' || armonia ? T.svgGuitarra(a.nombre, a.nombre) : T.svgTeclado(T.notasAcorde(T.parse(a.nombre)), T.parse(a.nombre).raiz, a.nombre)}</div>`).join('')}</div>`;
+    E.vista === 'guitarra' || armonia ? T.svgGuitarra(a.nombre, T.ver(a.nombre)) : T.svgTeclado(T.notasAcorde(T.parse(a.nombre)), T.parse(a.nombre).raiz, T.ver(a.nombre))}</div>`).join('')}</div>`;
   E.c.secciones.forEach((s) => {
     h += tituloSeccion(s) + '<div class="fila-compases">';
     let previo = null;
@@ -474,13 +490,13 @@ function vistaAcordes(el) {
       const acs = acordesDe(c, pInst);
       const firma = JSON.stringify(acs);
       const calla = acs.every(([a]) => !a || a === 'N.C.') ? ' calla' : '';
-      const repite = !ed && firma === previo && acs.length === 1 && !calla && (i - s.ini) % 4 !== 0;
+      const repite = !ed && firma === previo && acs.length === 1 && !calla && (i - s.ini) % (+pref('cols') || 4) !== 0;
       const metro = !c.anacrusa && c.pulsos !== E.c.compas ? `<span class="metro">${c.pulsos}/4</span>` : '';
       let clases = calla;
       if (ed && i === E.sel) clases += ' sel';
       if (ed && Array.from({ length: c.pulsos }, (_, j) => c.beat + j).some((k) => tocados.has(k))) clases += ' corregido';
       h += `<div class="compas${clases}" data-c="${i}" style="grid-template-columns:${acs.map(([, n]) => n + 'fr').join(' ')}"><sup>${i + 1}</sup>${metro}${
-        repite ? '<span class="rep">%</span>' : acs.map(([a]) => (a === LINEA ? `<span class="linea" title="Toca una línea o notas sueltas: ver la partitura">${LINEA}</span>` : a ? `<span>${esc(nom(a))}</span>` : '<span class="silencio">–</span>')).join('')}</div>`;
+        repite ? '<span class="rep">%</span>' : acs.map(([a]) => (a === LINEA ? `<span class="linea" title="Toca una línea o notas sueltas: ver la partitura">${LINEA}</span>` : a ? `<span>${esc(T.ver(nom(a)))}</span>` : '<span class="silencio">–</span>')).join('')}</div>`;
       previo = firma;
     }
     h += '</div>';
@@ -514,6 +530,7 @@ function normalizarAcorde(txt) {
   if (!s) return '';
   if (/^(n\.?c\.?|-|–|x)$/i.test(s)) return 'N.C.';
   s = s.replace(/^(do|re|mi|fa(?!dd|ug)|sol|la|si)/i, (x) => SOLFEO[x.toLowerCase()]);
+  s = s.replace(/\/(do|re|mi|fa|sol|la|si)/i, (_, x) => '/' + SOLFEO[x.toLowerCase()]);
   s = s[0].toUpperCase() + s.slice(1);
   const m = /^([A-G][#b]?)([^/]*)(?:\/([A-Ga-g][#b]?))?$/.exec(s);
   if (!m) return null;
@@ -527,7 +544,7 @@ function normalizarAcorde(txt) {
 const correccionesDe = (p) => (p ? ((E.c.correcciones || {}).pistas || {})[p.id] : (E.c.correcciones || {}).acordes) || [];
 const pulsosHoja = (cp, p) => (p ? (propios(p) || []).slice(cp.beat, cp.beat + cp.pulsos) : pulsosDe(cp));
 // lo que muestra una casilla del editor: en la hoja de un instrumento '' es «no toca»
-const casilla = (a, p) => (p && !a ? '–' : a === LINEA ? LINEA : nom(a));
+const casilla = (a, p) => (p && !a ? '–' : a === LINEA ? LINEA : T.ver(nom(a)));
 // texto de una casilla -> valor sin transportar; undefined = vacía (sigue el anterior); null = no se entiende.
 // En la hoja de un instrumento «–» es '' (no toca) y «♪» una línea.
 function leerCasilla(txt, p) {
@@ -565,7 +582,7 @@ function barraEdicion(usados, p, el_inst) {
       <span class="aviso" style="margin:0">Un acorde por pulso; vacío = sigue el anterior. ${p
         ? `«–» = no toca, «${LINEA}» = línea o notas sueltas. Los pulsos de un compás cambian en todas las hojas.`
         : '«nc» = sin acorde.'}</span></div>
-      <datalist id="ed-lista">${usados.map((a) => `<option value="${esc(a.nombre)}">`).join('')}</datalist>`;
+      <datalist id="ed-lista">${usados.map((a) => `<option value="${esc(T.ver(a.nombre))}">`).join('')}</datalist>`;
   }
   return h + '</div>';
 }
@@ -795,7 +812,7 @@ function vistaPartitura(tipo, el = $('#contenido')) {
   el.innerHTML = intro + '<div id="filas"></div>';
   const cont = $('#filas', el);
   const ancho = cont.clientWidth;
-  const porFila = ancho < 640 ? 2 : ancho < 900 ? 3 : 4;
+  const porFila = ancho < 480 ? 1 : ancho < 640 ? 2 : ancho < 900 ? 3 : 4;   // en el celular, un compás por renglón
   const extra = 78;
   const w = (ancho - extra - 2) / porFila;
   const y2 = P.tab === 6 ? 122 : P.manoIzq ? 124 : 128;
@@ -899,7 +916,7 @@ function vistaPartitura(tipo, el = $('#contenido')) {
         if (primero) h += `<span class="numero" style="left:${x + 2}px">${i + 1}</span>`;
         c.acordes.forEach(([a, n]) => {
           const previo = pulso === 0 && i > 0 ? E.c.compases[i - 1].acordes.slice(-1)[0][0] : null;
-          if (a !== 'N.C.' && (a !== previo || primero)) h += `<span class="cifrado" style="left:${x0 + (pulso / c.pulsos) * (x1 - x0)}px">${esc(nom(a))}</span>`;
+          if (a !== 'N.C.' && (a !== previo || primero)) h += `<span class="cifrado" style="left:${x0 + (pulso / c.pulsos) * (x1 - x0)}px">${esc(T.ver(nom(a)))}</span>`;
           pulso += n;
         });
         fila.insertAdjacentHTML('beforeend', h);
@@ -924,18 +941,18 @@ function vistaImpro(el) {
   const enTono = T.notasTonalidad(t, usados);
   const fuera = (a) => { const p = T.parse(a); return p && T.notasAcorde(p).some((n) => !enTono.includes(n)); };
 
-  let h = `<h3>Escalas para improvisar en ${t.nombre}</h3>
+  let h = `<h3>Escalas para improvisar en ${T.ver(t.nombre)}</h3>
     <div class="tarjetas">${escalas.map((e, k) => `
       <div class="tarjeta ${k === E.escala ? 'on' : ''}" data-k="${k}"><span class="nivel ${e.nivel}">${e.nivel}</span><b>${e.nombre}</b>
-        <div class="notas">${e.notas.map((n) => T.nota(n, t.bemol)).join(' · ')}</div><p>${e.porque}</p></div>`).join('')}</div>
+        <div class="notas">${e.notas.map((n) => T.ver(T.nota(n, t.bemol))).join(' · ')}</div><p>${e.porque}</p></div>`).join('')}</div>
     <div class="dos" style="margin-top:14px"><b>${sel.nombre}</b>
       <div class="selector" id="sel-diap"><button data-i="guitarra">Guitarra</button><button data-i="bajo">Bajo</button><button data-i="piano">Piano</button></div></div>
     ${E.diapason === 'piano' ? `<div style="margin:12px 0">${T.svgTeclado(new Set(sel.notas), sel.raiz, '', 2, 420)}</div>`
-      : T.svgDiapason(sel.notas, sel.raiz, t.bemol, E.diapason === 'bajo')}
+      : `<div class="desliza">${T.svgDiapason(sel.notas, sel.raiz, t.bemol, E.diapason === 'bajo')}</div>`}
     <p class="aviso">En naranja la tónica. Mientras suena la canción, muteá la voz o la guitarra desde “Pistas” y tocá encima.</p>
 
     <h3>Qué tocar en cada sección</h3>
-    <table><tr><th>Sección</th><th>Acordes</th><th>Notas guía (3ª y 7ª)</th><th>Sugerencia</th></tr>`;
+    <div class="desliza"><table><tr><th>Sección</th><th>Acordes</th><th>Notas guía (3ª y 7ª)</th><th>Sugerencia</th></tr>`;
   const vistas = new Set();
   c.secciones.forEach((s) => {
     const acs = [...new Set(c.compases.slice(s.ini, s.fin).flatMap((x) => x.acordes.map(([a]) => a)).filter((a) => a !== 'N.C.'))].map(nom);
@@ -944,12 +961,12 @@ function vistaImpro(el) {
     vistas.add(firma);
     const raros = acs.filter(fuera);
     h += `<tr><td class="ac">${esc(s.nombre)}</td>
-      <td class="ac">${acs.map((a) => (fuera(a) ? `<span class="fuera">${a}</span>` : a)).join(' – ')}</td>
-      <td>${acs.map((a) => `${a}: ${T.notasGuia(a, t)}`).join('<br>')}</td>
-      <td>${raros.length ? `Sale de la tonalidad en ${raros.map((a) => `<span class="fuera">${a}</span>`).join(', ')}: ahí cambiá de escala.<br>${raros.map((a) => `<b>${a}</b> → ${T.consejoAcorde(a, t)}`).join('<br>')}`
+      <td class="ac">${acs.map((a) => (fuera(a) ? `<span class="fuera">${T.ver(a)}</span>` : T.ver(a))).join(' – ')}</td>
+      <td data-l="Notas guía (3ª y 7ª)">${acs.map((a) => `${T.ver(a)}: ${T.notasGuia(a, t)}`).join('<br>')}</td>
+      <td data-l="Sugerencia">${raros.length ? `Sale de la tonalidad en ${raros.map((a) => `<span class="fuera">${T.ver(a)}</span>`).join(', ')}: ahí cambiá de escala.<br>${raros.map((a) => `<b>${T.ver(a)}</b> → ${T.consejoAcorde(a, t)}`).join('<br>')}`
         : `Todo dentro de ${escalas.find((e) => e.nivel === 'recomendada').nombre}. Apuntá a las notas guía en cada cambio de acorde.`}</td></tr>`;
   });
-  h += `</table><h3>Ideas de arreglo</h3><ul>${ideasArreglo(t, usados).map((x) => `<li>${x}</li>`).join('')}</ul>
+  h += `</table></div><h3>Ideas de arreglo</h3><ul>${ideasArreglo(t, usados).map((x) => `<li>${x}</li>`).join('')}</ul>
     <p class="aviso">Sugerencias generadas con reglas de armonía a partir del análisis automático: tomalas como punto de partida.</p>`;
   el.innerHTML = h;
   $$('.tarjeta', el).forEach((d) => { d.onclick = () => { E.escala = +d.dataset.k; pintar(); }; });
@@ -964,7 +981,7 @@ function ideasArreglo(t, usados) {
   // cejilla
   const cej = T.sugerirCejilla(usados);
   if (cej.traste) {
-    const formas = usados.slice(0, 5).map((a) => T.transportar(a.nombre, -cej.traste, false)).join(', ');
+    const formas = usados.slice(0, 5).map((a) => T.ver(T.transportar(a.nombre, -cej.traste, false))).join(', ');
     ideas.push(`<b>Guitarra:</b> con cejilla en el traste ${cej.traste} casi todo sale con acordes abiertos (${formas}…), que suenan más llenos que las cejillas.`);
   } else if (cej.sinCejilla > 0.6) ideas.push('<b>Guitarra:</b> la mayoría de los acordes sale en posiciones abiertas, sin cejilla.');
   else ideas.push('<b>Guitarra:</b> hay muchos acordes con cejilla; una segunda guitarra puede tocar tríadas en las tres cuerdas agudas para no duplicar el mismo registro.');
@@ -1004,17 +1021,17 @@ function ideasArreglo(t, usados) {
   // color armónico
   const p0 = usados[0] && T.parse(usados[0].nombre);
   if (p0 && (p0.calidad === '' || p0.calidad === 'm')) {
-    const rel = p0.calidad === '' ? T.nota(p0.raiz + 9, t.bemol) + 'm' : T.nota(p0.raiz + 3, t.bemol);
+    const rel = T.ver(p0.calidad === '' ? T.nota(p0.raiz + 9, t.bemol) + 'm' : T.nota(p0.raiz + 3, t.bemol));
     const esc7 = T.notasTonalidad(t, usados);     // la séptima que cae dentro de la escala de la tonalidad
     const con7 = usados.slice(0, 3).map((a) => {
       const p = T.parse(a.nombre);
       if (p.calidad === 'm') return a.nombre + '7';
       if (p.calidad !== '') return a.nombre;
       return a.nombre + (esc7.includes(T.mod(p.raiz + 11)) ? 'maj7' : '7');
-    }).join(', ');
-    ideas.push(`<b>Color:</b> probá agregar séptimas (${con7}) en teclado o segunda guitarra, y en una repetición reemplazar ${usados[0].nombre} por su relativo ${rel} para variar sin cambiar la melodía.`);
+    }).map(T.ver).join(', ');
+    ideas.push(`<b>Color:</b> probá agregar séptimas (${con7}) en teclado o segunda guitarra, y en una repetición reemplazar ${T.ver(usados[0].nombre)} por su relativo ${rel} para variar sin cambiar la melodía.`);
   }
-  ideas.push(`<b>Final:</b> si el tema termina en fade-out, acuerden un cierre: repetir la última frase del coro y cortar todos juntos en ${t.nombre}.`);
+  ideas.push(`<b>Final:</b> si el tema termina en fade-out, acuerden un cierre: repetir la última frase del coro y cortar todos juntos en ${T.ver(t.nombre)}.`);
   return ideas;
 }
 
@@ -1041,7 +1058,7 @@ cursor.className = 'cursor';
 let scrollManual = 0;
 ['wheel', 'touchmove', 'mousedown', 'keydown'].forEach((ev) => $('#vista').addEventListener(ev, () => { scrollManual = performance.now(); }, { passive: true }));
 function seguirCursor(el, ya) {
-  if (!ya && performance.now() - scrollManual < 4000) return;
+  if (!ya && (pref('seguir') === 'no' || performance.now() - scrollManual < 4000)) return;
   const v = $('#vista');
   const r = el.getBoundingClientRect(), rv = v.getBoundingClientRect();
   if (r.top < rv.top + 30 || r.bottom > rv.bottom - 50) v.scrollTo({ top: v.scrollTop + r.top - rv.top - rv.height * 0.3, behavior: 'smooth' });
@@ -1110,7 +1127,7 @@ function refrescar(forzar) {
   const a = nom(acordeEn(i, t));
   if (a !== E.acordeActual || forzar) {
     E.acordeActual = a;
-    $('#acorde-actual').textContent = a;
+    $('#acorde-actual').textContent = T.ver(a);
     $$('.diagramas .cont').forEach((d) => d.classList.toggle('actual', d.dataset.acorde === a));
   }
   $('#seccion-actual').textContent = s ? s.nombre : ' ';
@@ -1202,16 +1219,21 @@ $('#repetir').onchange = () => {
 $('#btn-inicio').onclick = () => { E.pararEn = null; ir(0); $('#vista').scrollTo({ top: 0 }); };
 
 // ----------------------------------------------------------------- panel lateral: visible u oculto
+// en pantallas angostas el panel es un cajón encima de la hoja (ver estilo.css): no cambia el ancho de la
+// hoja ni se recuerda; se cierra al abrir un tema o al tocar afuera
+const cajon = () => window.matchMedia('(max-width: 900px)').matches;
 function ponerPanel(visible) {
   document.body.classList.toggle('panel-oculto', !visible);
   $('#btn-panel').classList.toggle('on', visible);
+  if (cajon()) return;
   recordar('panel', visible ? 'fijo' : 'oculto');
   if (E.c && E.modo === 'partitura') pintar();          // la partitura se re-acomoda al ancho nuevo
 }
 const panelVisible = () => !document.body.classList.contains('panel-oculto');
 $('#btn-panel').onclick = () => ponerPanel(!panelVisible());
-// por defecto: visible en pantallas anchas, oculto en tablets y celulares
-ponerPanel(recordar('panel') ? recordar('panel') === 'fijo' : window.innerWidth >= 1100);
+$('.cuerpo').addEventListener('click', (ev) => { if (ev.target === ev.currentTarget && cajon()) ponerPanel(false); });
+// por defecto: visible en pantallas anchas, oculto en tablets; en el celular arranca abierto, con la lista de temas
+ponerPanel(cajon() || (recordar('panel') ? recordar('panel') === 'fijo' : window.innerWidth >= 1100));
 
 // ----------------------------------------------------------------- silbato de tren (al tocar Analizar)
 // en el clic (y no en el envío) para que suene siempre que se toca la locomotora; Enter en el campo también
@@ -1222,6 +1244,7 @@ $('.locomotora').addEventListener('click', () => silbato());
 // armónicos: onda triangular), arranca un poco abajo y sube, más el soplido (ruido alrededor de 1,5 kHz).
 // Dos pitadas: una corta y una larga.
 function silbato() {
+  if (pref('silbato') === 'no') return;
   try {
     const ctx = ctxAudio();
     ctx.resume();
@@ -1255,6 +1278,22 @@ function silbato() {
     pitada(t + 0.5, 1.15);
   } catch (e) { /* sin audio: no pasa nada */ }
 }
+
+// ----------------------------------------------------------------- configuración (engranajes del logo)
+function pintarAjustes() {
+  $$('#dlg-ajustes [data-pref]').forEach((s) => $$('button', s).forEach((b) => b.classList.toggle('on', b.dataset.v === pref(s.dataset.pref))));
+}
+$$('#dlg-ajustes [data-pref] button').forEach((b) => {
+  b.onclick = () => {
+    recordar('pref.' + b.parentElement.dataset.pref, b.dataset.v);
+    aplicarPreferencias();
+    pintarAjustes();
+    if (E.c) pintar();
+  };
+});
+$('#btn-ajustes').onclick = () => { pintarAjustes(); $('#dlg-ajustes').showModal(); };
+api('version').then((d) => { $('#version').textContent = d.version; }).catch(() => { /* servidor viejo, sin /api/version */ });
+$('#ajustes-listo').onclick = () => $('#dlg-ajustes').close();
 
 // ----------------------------------------------------------------- engranajes del logo
 $$('[data-engranaje]').forEach((p) => {
