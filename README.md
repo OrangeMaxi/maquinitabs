@@ -115,7 +115,9 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
    (casi todo es la separación en pistas; depende del procesador).
 2. Cuando termina se abre sola. A la izquierda están las pistas (M = mutear, S = solo, volumen) y la lista
    de canciones. El botón de arriba a la izquierda muestra u oculta ese panel (oculto, la hoja ocupa toda
-   la pantalla: útil en una tablet). La app recuerda la elección. La última pista es el **metrónomo**: M lo prende o apaga, y tiene su propio volumen.
+   la pantalla). La app recuerda la elección. En el celular y la tablet el panel se abre encima de la hoja:
+   arranca abierto con la lista de temas y se cierra solo al elegir uno o al tocar afuera. La última pista es
+   el **metrónomo**: M lo prende o apaga, y tiene su propio volumen.
 3. Pestañas: **Tema completo** (la armonía de todo el tema, sacada de la mezcla) y, separadas, una por
    instrumento (**Guitarra, Piano, Otros, Bajo, Voz**). Al abrir un tema se elige sola la pista que más acordes
    toca. Dentro de cada pestaña se elige qué ver:

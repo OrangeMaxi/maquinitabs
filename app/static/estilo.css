@@ -3,8 +3,11 @@
   --acento: #19c37d; --acento2: #f5a524; --papel: #fdfdfb; --tinta: #1b1d22;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }         /* que `display: flex` no le gane al atributo hidden (reproductor, pestañas) */
 html, body { height: 100%; margin: 0; }
 body { background: var(--fondo); color: var(--texto); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+/* en el celular, el alto visible sin las barras del navegador (si no, el reproductor queda tapado) */
+body { height: 100dvh; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; border: 1px solid var(--borde); background: var(--panel2); border-radius: 6px; padding: 6px 12px; }
 button:hover { border-color: var(--tenue); }
@@ -82,7 +85,8 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .pista.apagada .nombre { opacity: .45; }
 
 .pestanas { display: flex; gap: 4px; padding: 8px 22px 0; border-bottom: 1px solid var(--borde); background: var(--panel); align-items: flex-end; }
-.pestanas button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 9px 12px; color: var(--tenue); }
+.pestanas .tabs, .pestanas .acciones-hoja { display: flex; gap: 4px; align-items: flex-end; }
+.pestanas button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 9px 12px; color: var(--tenue); white-space: nowrap; }
 .pestanas button.activa { color: var(--texto); border-bottom-color: var(--acento); }
 .pestanas .hueco { flex: 1; }
 .pestanas .divisor { align-self: center; width: 1px; height: 20px; margin: 0 10px 3px; background: var(--borde); }
@@ -175,6 +179,7 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .impro .fuera { color: #b35c00; font-weight: 700; }
 .impro ul { padding-left: 20px; } .impro li { margin: 6px 0; }
 .dos { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.desliza { overflow-x: auto; }
 
 /* ------------------------------------------------ reproductor */
 /* reproductor: mando (inicio, play, tiempo, barra) a lo ancho; acorde, interruptores y tonalidad repartidos parejo */
@@ -219,18 +224,121 @@ dialog textarea { width: 100%; background: var(--fondo); border: 1px solid var(-
 dialog .acciones { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 
 @media (max-width: 900px) {
-  /* pantalla angosta: pistas arriba y hoja abajo, cada una con su propio scroll */
-  .cuerpo { flex-direction: column; }
-  aside { width: auto; border-right: 0; border-bottom: 1px solid var(--borde); max-height: 36vh; }
+  /* pantalla angosta: el panel de pistas y canciones es un cajón que se abre encima de la hoja */
+  aside { position: absolute; top: 0; bottom: 0; left: 0; z-index: 20; width: min(340px, 88vw); box-shadow: 8px 0 30px #0009; }
+  body:not(.panel-oculto) .cuerpo::after { content: ""; position: absolute; inset: 0; z-index: 19; background: #000a; }
   #vista { padding: 10px; } .hoja { padding: 16px 12px; }
   .opciones { flex-direction: row; gap: 12px; flex-wrap: wrap; }
-  .pista { grid-template-columns: 22px 84px 1fr auto auto; padding: 4px 0; }
+  .pista { grid-template-columns: 22px 84px 1fr auto auto; padding: 6px 0; }
   .reproductor { gap: 10px 18px; justify-content: space-around; padding: 8px 12px; }
   .mando { flex-basis: 100%; }
   .barra-sup { gap: 10px; padding: 8px 10px; }
   .pista > * { grid-row: 1; } .pista input[type=range] { grid-column: 3; } .pista .m { grid-column: 4; } .pista .s { grid-column: 5; }
   .pista .nombre small { display: none; }
-  .reproductor { flex-wrap: wrap; } .pestanas { overflow-x: auto; }
+  .pista button { min-height: 32px; min-width: 34px; }
+  .reproductor { flex-wrap: wrap; } .pestanas .tabs { overflow-x: auto; scrollbar-width: none; }
+  .pestanas .tabs::-webkit-scrollbar { display: none; }
+  html { touch-action: manipulation; }          /* sin zoom por doble toque: los botones responden al instante */
+}
+
+@media (max-width: 600px) {
+  /* celular: todo a mano con el pulgar y la hoja con el mayor alto posible */
+  .barra-sup { gap: 6px; padding: 6px 8px; }
+  .marca b { display: none; }
+  .marca .engranajes { width: 32px; height: 24px; }
+  #form-url { gap: 2px; }
+  #form-url input, dialog textarea, .bucle select { font-size: 16px; }   /* con menos de 16px el iPhone hace zoom al tocarlos */
+  #form-url input { padding: 6px 10px; }
+  .subir { padding: 6px 4px; }
+  .locomotora svg { width: 44px; height: 32px; }
+
+  /* pestañas deslizables a lo ancho y, abajo, las acciones de la hoja */
+  .pestanas { flex-wrap: wrap; padding: 0; gap: 0; }
+  .pestanas .tabs { flex: 1 1 100%; padding: 2px 6px 0; }
+  .pestanas .tabs button { padding: 9px 10px; }
+  .pestanas .divisor { margin: 0 4px 3px; }
+  .pestanas .hueco { display: none; }
+  .pestanas .acciones-hoja { flex: 1 1 100%; justify-content: flex-end; align-items: center; gap: 6px; padding: 5px 8px; border-top: 1px solid var(--borde); }
+  .pestanas .secundario { margin: 0; padding: 4px 10px; font-size: 13px; }
+
+  /* reproductor en dos renglones: mando; acorde, cuenta, repetir y tonalidad. Desde/hasta solo con Repetir prendido */
+  .reproductor { gap: 6px 8px; padding: 6px 10px 8px; justify-content: space-between; }
+  .mando { gap: 10px; min-width: 0; }
+  .play { width: 42px; height: 42px; }
+  .inicio { width: 34px; height: 34px; }
+  .acorde-actual { flex: 1; min-width: 0; text-align: left; }
+  .acorde-actual small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .acorde-actual b { font-size: 20px; }
+  .interruptor small { display: none; }
+  .interruptor svg { width: 38px; height: 38px; }
+  .bucle { display: contents; }
+  .bucle .rango { order: 10; flex: 1 1 100%; min-width: 0; flex-direction: row; gap: 10px; }
+  .bucle:not(.on) .rango { display: none; }
+  .bucle .rango span { flex: 1; min-width: 0; }
+  .bucle select { flex: 1; min-width: 0; max-width: none; padding: 2px 4px; }
+  .transporte { gap: 4px; }
+  .transporte div { min-width: 40px; }
+  .transporte small { display: none; }
+  .transporte button { width: 34px; height: 34px; }
+
+  /* hoja */
+  #vista { padding: 8px; }
+  .hoja { padding: 14px 10px 24px; border-radius: 6px; }
+  .hoja header { gap: 4px 10px; }
+  .hoja header h2 { font-size: 20px; }
+  .hoja header .artista { font-size: 14px; }
+  .hoja header .datos { font-size: 12px; }
+  #sel-modo { display: flex; width: 100%; }
+  #sel-modo button { flex: 1; padding: 7px 4px; white-space: nowrap; }
+  #sel-modo .largo { display: none; }
+  /* compases con más de un acorde: cada uno ocupa lo que necesita (no lo proporcional a sus pulsos), si no se cortan */
+  .compas { grid-template-columns: none !important; grid-auto-columns: auto; justify-content: space-between; column-gap: 4px;
+    font-size: 14px; min-height: 40px; padding: 0 3px; letter-spacing: -.02em; }
+  .compas > span { min-width: 0; overflow: hidden; white-space: nowrap; }
+  .compas sup { font-size: 8.5px; left: 3px; }
+  .bienvenida { margin: 4vh auto; } .bienvenida h1 { font-size: 23px; }
+
+  /* edición: el editor queda pegado arriba, así que lo más compacto posible */
+  .editor { top: -8px; margin: 10px -4px 6px; padding: 6px 8px; }
+  .ed-linea { gap: 6px 8px; padding: 3px 0; }
+  .editor .aviso { font-size: 11px; }
+  #ed-pulsos { display: flex; flex-wrap: wrap; }
+  #ed-pulsos input { width: 64px; }
+
+  /* improvisación: el diapasón se desliza a lo ancho en vez de achicarse hasta no leerse; la tabla, una tarjeta por sección */
+  .desliza .diapason { min-width: 620px; }
+  .tarjetas { grid-template-columns: 1fr; }
+  .impro table, .impro tbody, .impro tr, .impro td { display: block; }
+  .impro tr:first-child { display: none; }
+  .impro tr { border: 1px solid #ddd; border-radius: 8px; padding: 6px 2px; margin-bottom: 8px; }
+  .impro td { border: 0; padding: 3px 8px; }
+  .impro td.ac { white-space: normal; }
+  .impro td[data-l]::before { content: attr(data-l); display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #777; }
+}
+
+@media (max-width: 600px), (max-height: 500px) {
+  /* celular (parado o acostado): diagramas en una tira que se desliza, en vez de varias filas antes de la hoja */
+  .diagramas { flex-wrap: nowrap; overflow-x: auto; gap: 2px 4px; padding-bottom: 4px; }
+  .diagramas .cont { flex: none; }
+  .diagramas .diagrama { width: 66px; height: auto; }
+  .diagramas .teclado { width: 118px; height: auto; }
+}
+
+@media (max-height: 500px) and (min-width: 601px) {
+  /* celular acostado: barras finas y el reproductor en un solo renglón; desde/hasta solo con Repetir prendido */
+  .barra-sup { padding: 4px 10px; }
+  .pestanas button { padding: 7px 12px; }
+  .pestanas .secundario { margin-bottom: 5px; padding: 3px 10px; }
+  .mando { flex-basis: auto; min-width: 200px; }
+  .reproductor { padding: 4px 12px; gap: 6px 12px; }
+  .play { width: 40px; height: 40px; }
+  .interruptor small, .transporte small { display: none; }
+  .interruptor svg { width: 36px; height: 36px; }
+  .acorde-actual { min-width: 64px; }
+  .bucle:not(.on) .rango { display: none; }
+  .bucle select { max-width: 130px; }
+  #vista { padding: 8px; }
+  .hoja { padding: 14px 16px 24px; }
 }
 @media print {
   body { background: #fff; display: block; height: auto; }

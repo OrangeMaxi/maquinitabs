@@ -73,6 +73,7 @@ $('#archivo').onchange = async () => {
   const datos = new FormData();
   datos.append('archivo', f);
   $('#btn-subir').disabled = true;
+  if (cajon()) ponerPanel(true);                       // el progreso se ve en el panel
   $('#trabajos').insertAdjacentHTML('afterbegin', `<div class="trabajo" id="subiendo"><b>${esc(f.name)}</b><span>Subiendo…</span></div>`);
   try {
     const r = await fetch('/api/canciones/subir', { method: 'POST', body: datos });
@@ -91,6 +92,7 @@ $('#form-url').onsubmit = async (ev) => {
   try {
     seguir(await api('canciones', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: $('#url').value }) }));
     $('#url').value = '';
+    if (cajon()) ponerPanel(true);
   } catch (e) { alert(e.message); }
 };
 
@@ -109,6 +111,7 @@ async function abrir(id) {
   A.pos = 0;
   $$('#lista li').forEach((li) => li.classList.toggle('activa', li.dataset.id === id));
   ['#pestanas', '#reproductor', '#panel-pistas'].forEach((s) => { $(s).hidden = false; });
+  if (cajon()) ponerPanel(false);
   $('#t-total').textContent = mmss(c.duracion);
   document.title = `${c.titulo} · Maquinitabs`;
   pintarMezclador();
@@ -432,7 +435,7 @@ const MODOS = {
 };
 const NOMBRE_MODO = { acordes: 'Acordes', partitura: 'Partitura', impro: 'Improvisación' };
 function selectorModos() {
-  const partitura = E.vista === 'guitarra' || E.vista === 'bajo' ? 'Partitura y tablatura' : 'Partitura';
+  const partitura = E.vista === 'guitarra' || E.vista === 'bajo' ? 'Partitura<span class="largo"> y tablatura</span>' : 'Partitura';
   return `<div class="no-imprimir" style="margin-top:12px"><div class="selector" id="sel-modo">${MODOS[E.vista].map((m) =>
     `<button data-m="${m}">${m === 'partitura' ? partitura : NOMBRE_MODO[m]}</button>`).join('')}</div></div>`;
 }
@@ -795,7 +798,7 @@ function vistaPartitura(tipo, el = $('#contenido')) {
   el.innerHTML = intro + '<div id="filas"></div>';
   const cont = $('#filas', el);
   const ancho = cont.clientWidth;
-  const porFila = ancho < 640 ? 2 : ancho < 900 ? 3 : 4;
+  const porFila = ancho < 480 ? 1 : ancho < 640 ? 2 : ancho < 900 ? 3 : 4;   // en el celular, un compás por renglón
   const extra = 78;
   const w = (ancho - extra - 2) / porFila;
   const y2 = P.tab === 6 ? 122 : P.manoIzq ? 124 : 128;
@@ -931,11 +934,11 @@ function vistaImpro(el) {
     <div class="dos" style="margin-top:14px"><b>${sel.nombre}</b>
       <div class="selector" id="sel-diap"><button data-i="guitarra">Guitarra</button><button data-i="bajo">Bajo</button><button data-i="piano">Piano</button></div></div>
     ${E.diapason === 'piano' ? `<div style="margin:12px 0">${T.svgTeclado(new Set(sel.notas), sel.raiz, '', 2, 420)}</div>`
-      : T.svgDiapason(sel.notas, sel.raiz, t.bemol, E.diapason === 'bajo')}
+      : `<div class="desliza">${T.svgDiapason(sel.notas, sel.raiz, t.bemol, E.diapason === 'bajo')}</div>`}
     <p class="aviso">En naranja la tónica. Mientras suena la canción, muteá la voz o la guitarra desde “Pistas” y tocá encima.</p>
 
     <h3>Qué tocar en cada sección</h3>
-    <table><tr><th>Sección</th><th>Acordes</th><th>Notas guía (3ª y 7ª)</th><th>Sugerencia</th></tr>`;
+    <div class="desliza"><table><tr><th>Sección</th><th>Acordes</th><th>Notas guía (3ª y 7ª)</th><th>Sugerencia</th></tr>`;
   const vistas = new Set();
   c.secciones.forEach((s) => {
     const acs = [...new Set(c.compases.slice(s.ini, s.fin).flatMap((x) => x.acordes.map(([a]) => a)).filter((a) => a !== 'N.C.'))].map(nom);
@@ -945,11 +948,11 @@ function vistaImpro(el) {
     const raros = acs.filter(fuera);
     h += `<tr><td class="ac">${esc(s.nombre)}</td>
       <td class="ac">${acs.map((a) => (fuera(a) ? `<span class="fuera">${a}</span>` : a)).join(' – ')}</td>
-      <td>${acs.map((a) => `${a}: ${T.notasGuia(a, t)}`).join('<br>')}</td>
-      <td>${raros.length ? `Sale de la tonalidad en ${raros.map((a) => `<span class="fuera">${a}</span>`).join(', ')}: ahí cambiá de escala.<br>${raros.map((a) => `<b>${a}</b> → ${T.consejoAcorde(a, t)}`).join('<br>')}`
+      <td data-l="Notas guía (3ª y 7ª)">${acs.map((a) => `${a}: ${T.notasGuia(a, t)}`).join('<br>')}</td>
+      <td data-l="Sugerencia">${raros.length ? `Sale de la tonalidad en ${raros.map((a) => `<span class="fuera">${a}</span>`).join(', ')}: ahí cambiá de escala.<br>${raros.map((a) => `<b>${a}</b> → ${T.consejoAcorde(a, t)}`).join('<br>')}`
         : `Todo dentro de ${escalas.find((e) => e.nivel === 'recomendada').nombre}. Apuntá a las notas guía en cada cambio de acorde.`}</td></tr>`;
   });
-  h += `</table><h3>Ideas de arreglo</h3><ul>${ideasArreglo(t, usados).map((x) => `<li>${x}</li>`).join('')}</ul>
+  h += `</table></div><h3>Ideas de arreglo</h3><ul>${ideasArreglo(t, usados).map((x) => `<li>${x}</li>`).join('')}</ul>
     <p class="aviso">Sugerencias generadas con reglas de armonía a partir del análisis automático: tomalas como punto de partida.</p>`;
   el.innerHTML = h;
   $$('.tarjeta', el).forEach((d) => { d.onclick = () => { E.escala = +d.dataset.k; pintar(); }; });
@@ -1202,16 +1205,21 @@ $('#repetir').onchange = () => {
 $('#btn-inicio').onclick = () => { E.pararEn = null; ir(0); $('#vista').scrollTo({ top: 0 }); };
 
 // ----------------------------------------------------------------- panel lateral: visible u oculto
+// en pantallas angostas el panel es un cajón encima de la hoja (ver estilo.css): no cambia el ancho de la
+// hoja ni se recuerda; se cierra al abrir un tema o al tocar afuera
+const cajon = () => window.matchMedia('(max-width: 900px)').matches;
 function ponerPanel(visible) {
   document.body.classList.toggle('panel-oculto', !visible);
   $('#btn-panel').classList.toggle('on', visible);
+  if (cajon()) return;
   recordar('panel', visible ? 'fijo' : 'oculto');
   if (E.c && E.modo === 'partitura') pintar();          // la partitura se re-acomoda al ancho nuevo
 }
 const panelVisible = () => !document.body.classList.contains('panel-oculto');
 $('#btn-panel').onclick = () => ponerPanel(!panelVisible());
-// por defecto: visible en pantallas anchas, oculto en tablets y celulares
-ponerPanel(recordar('panel') ? recordar('panel') === 'fijo' : window.innerWidth >= 1100);
+$('.cuerpo').addEventListener('click', (ev) => { if (ev.target === ev.currentTarget && cajon()) ponerPanel(false); });
+// por defecto: visible en pantallas anchas, oculto en tablets; en el celular arranca abierto, con la lista de temas
+ponerPanel(cajon() || (recordar('panel') ? recordar('panel') === 'fijo' : window.innerWidth >= 1100));
 
 // ----------------------------------------------------------------- silbato de tren (al tocar Analizar)
 // en el clic (y no en el envío) para que suene siempre que se toca la locomotora; Enter en el campo también
