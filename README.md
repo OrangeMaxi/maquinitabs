@@ -183,6 +183,23 @@ Las correcciones se guardan en la carpeta de cada tema (`correcciones.json` y `e
 - Solo distingue compases de 3 y de 4 pulsos de forma automática; otros se marcan a mano.
 - Guitarras muy distorsionadas se transcriben nota por nota en lugar de acordes.
 
+## Versiones
+
+La versión de la app está en `app/VERSION`. Se ve en la Configuración (los engranajes del logo) y en el registro
+al arrancar (`docker logs maquinitabs`). Lo que trae cada versión está en [CHANGELOG.md](CHANGELOG.md).
+
+Se numeran MAYOR.MENOR.PARCHE ([versionado semántico](https://semver.org/lang/es/)):
+
+- **PARCHE** (1.2.**1**): arreglos.
+- **MENOR** (1.**3**.0): cosas nuevas que no rompen nada.
+- **MAYOR** (**2**.0.0): algo incompatible; por ejemplo, que haya que volver a analizar los temas.
+
+Para sacar una versión:
+
+1. Pasar lo anotado en «Sin publicar» del `CHANGELOG.md` a una sección con el número nuevo y la fecha.
+2. Poner ese número en `app/VERSION`.
+3. Ya en `main`, marcarla con un tag: `git tag v1.2.0 && git push origin v1.2.0`.
+
 ## Créditos y licencias de los modelos
 
 - Separación de pistas: [Demucs](https://github.com/facebookresearch/demucs) (`htdemucs_6s`), licencia MIT.
