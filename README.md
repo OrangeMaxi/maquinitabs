@@ -139,6 +139,10 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
    cuál, arranca con la sección que está sonando y el tramo queda marcado en la hoja) y transporte de tonalidad
    (cambia el audio y toda la notación).
 5. **Imprimir** saca la vista actual en papel o PDF.
+6. Los **engranajes** del logo abren la **Configuración**, que se guarda en cada navegador (cada uno la puede
+   tener distinta en su celular): tema claro, oscuro o del sistema; hoja oscura para poca luz; tamaño de la
+   hoja; compases por renglón; cifrado americano (C, Am) o latino (Do, Lam); si la hoja sigue la reproducción;
+   y si suena el silbato al analizar.
 
 ### Corregir la hoja
 

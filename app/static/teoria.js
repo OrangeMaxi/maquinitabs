@@ -19,6 +19,13 @@ const T = (() => {
     return { raiz, menor, bemol, nombre: nombre + (menor ? 'm' : ''), vex: nombre + (menor ? 'm' : '') };
   }
   const nota = (n, bemol) => (bemol ? BEMOL : SOST)[mod(n)];
+  // Cifrado para mostrar: americano (C, Am, Bb) o latino (Do, Lam, Sib). Solo al mostrar: por dentro (parse,
+  // transporte, digitaciones, correcciones) todo va siempre en americano.
+  const LATINO = { C: 'Do', D: 'Re', E: 'Mi', F: 'Fa', G: 'Sol', A: 'La', B: 'Si' };
+  let cifrado = 'americano';
+  const ponerCifrado = (c) => { cifrado = c; };
+  const ver = (s) => (cifrado === 'latino' && s ? String(s).replace(/(^|\/)([A-G])/g, (_, a, n) => a + LATINO[n]) : s);
+  const notaVer = (n, bemol) => ver(nota(n, bemol));
 
   function parse(acorde) {
     const m = /^([A-G][#b]?)([^/]*)(?:\/([A-G][#b]?))?$/.exec(acorde || '');
@@ -118,7 +125,7 @@ const T = (() => {
         const n = mod(c + f);
         if (!notasEscala.includes(n)) continue;
         const x = f === 0 ? x0 - 16 : x0 + (f - 0.5) * dx;
-        s += `<circle cx="${x}" cy="${y}" r="9.5" class="${n === raiz ? 'dp-raiz' : 'dp-nota'}"/><text x="${x}" y="${y + 3.5}" text-anchor="middle" class="dp-txt${n === raiz ? ' dp-txt-raiz' : ''}">${nota(n, bemol)}</text>`;
+        s += `<circle cx="${x}" cy="${y}" r="9.5" class="${n === raiz ? 'dp-raiz' : 'dp-nota'}"/><text x="${x}" y="${y + 3.5}" text-anchor="middle" class="dp-txt${n === raiz ? ' dp-txt-raiz' : ''}">${notaVer(n, bemol)}</text>`;
       }
     });
     return s + '</svg>';
@@ -142,19 +149,19 @@ const T = (() => {
   function sugerirEscalas(ton, acordes) {
     const r = ton.raiz, out = [];
     const hay = (grado, calidades) => acordes.some((a) => { const p = parse(a.nombre); return p && mod(p.raiz - r) === grado && calidades.includes(p.calidad); });
-    const agregar = (id, raiz, porque, nivel) => out.push({ id, raiz, nombre: `${nota(raiz, ton.bemol)} ${ESCALAS[id].nombre.toLowerCase()}`, notas: escala(raiz, id), porque, nivel });
+    const agregar = (id, raiz, porque, nivel) => out.push({ id, raiz, nombre: `${notaVer(raiz, ton.bemol)} ${ESCALAS[id].nombre.toLowerCase()}`, notas: escala(raiz, id), porque, nivel });
     if (ton.menor) {
       agregar('pentMenor', r, 'La apuesta segura: cinco notas que suenan bien sobre casi toda la canción.', 'segura');
       const dor = hay(5, ['', '7', 'maj7']) || hay(2, ['m', 'm7']);
-      if (dor) agregar('dorica', r, `Aparece el IV mayor (${nota(r + 5, ton.bemol)}): la 6ª mayor (${nota(r + 9, ton.bemol)}) es la nota característica. Evitá la 6ª menor de la escala natural.`, 'recomendada');
+      if (dor) agregar('dorica', r, `Aparece el IV mayor (${notaVer(r + 5, ton.bemol)}): la 6ª mayor (${notaVer(r + 9, ton.bemol)}) es la nota característica. Evitá la 6ª menor de la escala natural.`, 'recomendada');
       else agregar('menor', r, 'La escala de la tonalidad: agrega la 2ª y la 6ª menor a la pentatónica para frases más melódicas.', 'recomendada');
-      agregar('blues', r, `Pentatónica + la “blue note” (${nota(r + 6, ton.bemol)}) como nota de paso, para un color más rockero.`, 'color');
-      if (hay(7, ['', '7'])) agregar('armonica', r, `Sobre el V mayor (${nota(r + 7, ton.bemol)}) usá la sensible (${nota(r + 11, ton.bemol)}): solo en ese acorde.`, 'color');
+      agregar('blues', r, `Pentatónica + la “blue note” (${notaVer(r + 6, ton.bemol)}) como nota de paso, para un color más rockero.`, 'color');
+      if (hay(7, ['', '7'])) agregar('armonica', r, `Sobre el V mayor (${notaVer(r + 7, ton.bemol)}) usá la sensible (${notaVer(r + 11, ton.bemol)}): solo en ese acorde.`, 'color');
       if (dor) agregar('menor', r, 'Sirve en los acordes que no sean el IV mayor.', 'alternativa');
     } else {
       agregar('pentMayor', r, 'La apuesta segura: cinco notas sin tensiones sobre toda la progresión.', 'segura');
       const mix = hay(10, ['', 'maj7']) || hay(0, ['7']);
-      if (mix) agregar('mixolidia', r, `Aparece el bVII (${nota(r + 10, ton.bemol)}) o el I7: la 7ª menor es la nota característica.`, 'recomendada');
+      if (mix) agregar('mixolidia', r, `Aparece el bVII (${notaVer(r + 10, ton.bemol)}) o el I7: la 7ª menor es la nota característica.`, 'recomendada');
       else agregar('mayor', r, 'La escala de la tonalidad. Cuidado con la 4ª sobre el acorde de tónica: usala de paso.', 'recomendada');
       agregar('pentMenor', mod(r + 9), 'La pentatónica menor del relativo: mismas notas que la pentatónica mayor, en las posiciones de siempre.', 'alternativa');
       if (acordes.some((a) => (parse(a.nombre) || {}).calidad === '7')) agregar('blues', r, 'Con acordes de séptima dominante la escala de blues de la tónica da un color más sucio.', 'color');
@@ -173,18 +180,18 @@ const T = (() => {
   function consejoAcorde(nombre, ton) {
     const a = parse(nombre);
     if (!a) return '';
-    const ns = notasAcorde(a).map((n) => nota(n, ton.bemol));
+    const ns = notasAcorde(a).map((n) => notaVer(n, ton.bemol));
     const modos = MODO_ACORDE[a.calidad];
     const base = `arpegio ${ns.join('–')}`;
     if (!modos) return `${base} (acorde de paso: quedate en el arpegio)`;
-    return `${base}; ${modos.map((m) => `${nota(a.raiz, ton.bemol)} ${ESCALAS[m].nombre.toLowerCase()}`).join(' o ')}`;
+    return `${base}; ${modos.map((m) => `${notaVer(a.raiz, ton.bemol)} ${ESCALAS[m].nombre.toLowerCase()}`).join(' o ')}`;
   }
   function notasGuia(nombre, ton) {
     const a = parse(nombre);
     if (!a) return '';
     const i = INTERVALOS[a.calidad] || INTERVALOS[''];
     const g = [i[1]].concat(i[3] !== undefined ? [i[3]] : []);
-    return g.map((x) => nota(a.raiz + x, ton.bemol)).join(' y ');
+    return g.map((x) => notaVer(a.raiz + x, ton.bemol)).join(' y ');
   }
 
   // cejilla que deja más acordes en posiciones abiertas
@@ -196,7 +203,7 @@ const T = (() => {
     return { traste: mejor, abiertos: puntaje(mejor), sinCejilla: puntaje(0) };
   }
 
-  const nombreNota = (midi, bemol) => nota(midi, bemol) + (Math.floor(midi / 12) - 1);
+  const nombreNota = (midi, bemol) => notaVer(midi, bemol) + (Math.floor(midi / 12) - 1);
 
-  return { SOST, BEMOL, pc, mod, nota, tonalidad, parse, transportar, notasAcorde, digitacion, svgGuitarra, svgTeclado, svgDiapason, ESCALAS, escala, sugerirEscalas, notasTonalidad, consejoAcorde, notasGuia, sugerirCejilla, nombreNota };
+  return { SOST, BEMOL, pc, mod, nota, ver, ponerCifrado, tonalidad, parse, transportar, notasAcorde, digitacion, svgGuitarra, svgTeclado, svgDiapason, ESCALAS, escala, sugerirEscalas, notasTonalidad, consejoAcorde, notasGuia, sugerirCejilla, nombreNota };
 })();
