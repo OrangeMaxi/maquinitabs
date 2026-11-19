@@ -17,6 +17,9 @@ import analisis
 AQUI = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.environ.get("CANCIONES_RAIZ") or os.path.dirname(os.path.dirname(AQUI))
 PUERTO = int(os.environ.get("PORT", 5055))
+# versión de la app (ver CHANGELOG.md); no es la de analisis.VERSION, que es la del formato de app.json
+with open(os.path.join(AQUI, "VERSION"), encoding="utf-8") as f:
+    VERSION = f.read().strip()
 
 app = Flask(__name__, static_folder=os.path.join(AQUI, "static"), static_url_path="")
 app.config["MAX_CONTENT_LENGTH"] = 300 * 1024 * 1024        # archivos subidos: hasta 300 MB
@@ -97,6 +100,11 @@ def sin_cache(r):
     if request.path.endswith((".js", ".css", ".html")) or request.path == "/":
         r.headers["Cache-Control"] = "no-store"
     return r
+
+
+@app.get("/api/version")
+def version():
+    return jsonify({"version": VERSION})
 
 
 @app.get("/api/canciones")
@@ -228,7 +236,7 @@ def audio(cid, pista):
 if __name__ == "__main__":
     # HOST=0.0.0.0 (Docker, o para entrar desde otro dispositivo de la red); por defecto solo esta compu
     HOST = os.environ.get("HOST", "127.0.0.1")
-    print(f"Maquinitabs · canciones en: {RAIZ}\nAbrí http://localhost:{PUERTO}", flush=True)
+    print(f"Maquinitabs {VERSION} · canciones en: {RAIZ}\nAbrí http://localhost:{PUERTO}", flush=True)
     try:
         from waitress import serve
         serve(app, host=HOST, port=PUERTO, threads=12)

@@ -115,7 +115,9 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
    (casi todo es la separación en pistas; depende del procesador).
 2. Cuando termina se abre sola. A la izquierda están las pistas (M = mutear, S = solo, volumen) y la lista
    de canciones. El botón de arriba a la izquierda muestra u oculta ese panel (oculto, la hoja ocupa toda
-   la pantalla: útil en una tablet). La app recuerda la elección. La última pista es el **metrónomo**: M lo prende o apaga, y tiene su propio volumen.
+   la pantalla). La app recuerda la elección. En el celular y la tablet el panel se abre encima de la hoja:
+   arranca abierto con la lista de temas y se cierra solo al elegir uno o al tocar afuera. La última pista es
+   el **metrónomo**: M lo prende o apaga, y tiene su propio volumen.
 3. Pestañas: **Tema completo** (la armonía de todo el tema, sacada de la mezcla) y, separadas, una por
    instrumento (**Guitarra, Piano, Otros, Bajo, Voz**). Al abrir un tema se elige sola la pista que más acordes
    toca. Dentro de cada pestaña se elige qué ver:
@@ -137,6 +139,10 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
    cuál, arranca con la sección que está sonando y el tramo queda marcado en la hoja) y transporte de tonalidad
    (cambia el audio y toda la notación).
 5. **Imprimir** saca la vista actual en papel o PDF.
+6. Los **engranajes** del logo abren la **Configuración**, que se guarda en cada navegador (cada uno la puede
+   tener distinta en su celular): tema claro, oscuro o del sistema; hoja oscura para poca luz; tamaño de la
+   hoja; compases por renglón; cifrado americano (C, Am) o latino (Do, Lam); si la hoja sigue la reproducción;
+   y si suena el silbato al analizar.
 
 ### Corregir la hoja
 
@@ -176,6 +182,23 @@ Las correcciones se guardan en la carpeta de cada tema (`correcciones.json` y `e
 - La detección del compás puede fallar en ritmos irregulares (por ejemplo el 3+3+2 del tango).
 - Solo distingue compases de 3 y de 4 pulsos de forma automática; otros se marcan a mano.
 - Guitarras muy distorsionadas se transcriben nota por nota en lugar de acordes.
+
+## Versiones
+
+La versión de la app está en `app/VERSION`. Se ve en la Configuración (los engranajes del logo) y en el registro
+al arrancar (`docker logs maquinitabs`). Lo que trae cada versión está en [CHANGELOG.md](CHANGELOG.md).
+
+Se numeran MAYOR.MENOR.PARCHE ([versionado semántico](https://semver.org/lang/es/)):
+
+- **PARCHE** (1.2.**1**): arreglos.
+- **MENOR** (1.**3**.0): cosas nuevas que no rompen nada.
+- **MAYOR** (**2**.0.0): algo incompatible; por ejemplo, que haya que volver a analizar los temas.
+
+Para sacar una versión:
+
+1. Pasar lo anotado en «Sin publicar» del `CHANGELOG.md` a una sección con el número nuevo y la fecha.
+2. Poner ese número en `app/VERSION`.
+3. Ya en `main`, marcarla con un tag: `git tag v1.2.0 && git push origin v1.2.0`.
 
 ## Créditos y licencias de los modelos
 
