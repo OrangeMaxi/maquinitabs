@@ -1292,6 +1292,7 @@ $$('#dlg-ajustes [data-pref] button').forEach((b) => {
   };
 });
 $('#btn-ajustes').onclick = () => { pintarAjustes(); $('#dlg-ajustes').showModal(); };
+api('version').then((d) => { $('#version').textContent = d.version; }).catch(() => { /* servidor viejo, sin /api/version */ });
 $('#ajustes-listo').onclick = () => $('#dlg-ajustes').close();
 
 // ----------------------------------------------------------------- engranajes del logo

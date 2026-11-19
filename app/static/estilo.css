@@ -252,6 +252,8 @@ dialog .selector { border-color: var(--borde); justify-self: start; }
 dialog .selector button { background: var(--panel2); color: var(--texto); padding: 5px 11px; font-size: 13px; }
 dialog .selector button + button { border-left: 1px solid var(--borde); }
 dialog .selector button.on { background: var(--acento); color: #06281a; font-weight: 600; }
+dialog .version { margin-right: auto; align-self: center; color: var(--tenue); font-size: 12px; }
+dialog .version a { color: var(--tenue); }
 
 @media (max-width: 900px) {
   /* pantalla angosta: el panel de pistas y canciones es un cajón que se abre encima de la hoja */
