@@ -18,6 +18,8 @@ Lo nuevo de cada versión de Maquinitabs, de la más reciente a la más vieja. L
 
 - Set de prueba de transcripción (`pruebas/transcripcion`): compara modelos nota por nota con GuitarSet y EGDB
   (guitarra eléctrica). Se probó YourMT3: mejora poco con guitarra eléctrica y es 30-50 veces más lento.
+- `pruebas/transcripcion/umbrales.py`: mide el armado de notas de la app en la grilla de semicorcheas y barre sus
+  umbrales. Los actuales ya están cerca del óptimo, así que no se cambiaron.
 
 ## [1.2.0] - 2026-11-19
 
