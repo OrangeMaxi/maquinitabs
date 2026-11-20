@@ -80,6 +80,12 @@ def notas(ruta, cache, bordes, rango, max_voces=6, u_nota=0.32, u_ataque=0.5):
         if cache:
             np.savez_compressed(cache, nota=np.round(nota * 255).astype(np.uint8),
                                 ataque=np.round(ataque * 255).astype(np.uint8), version=VERSION_CACHE)
+    return armar(nota, ataque, bordes, rango, max_voces, u_nota, u_ataque)
+
+
+def armar(nota, ataque, bordes, rango, max_voces=6, u_nota=0.32, u_ataque=0.5, u_suelta=0.5, margen=0.1,
+          f_armonico=1.6):
+    """Activaciones del modelo -> notas en la grilla de casillas (separado para poder medirlo aparte)."""
     if not len(nota):
         return []
     lo, hi = max(rango[0], MIDI_BASE) - MIDI_BASE, min(rango[1], MIDI_BASE + 87) - MIDI_BASE
@@ -105,12 +111,12 @@ def notas(ruta, cache, bordes, rango, max_voces=6, u_nota=0.32, u_ataque=0.5):
                 d = s - ini
                 media = float(np.mean(fuerza))
                 # una casilla suelta y floja suele ser un armónico o filtración de otra pista
-                if d >= 2 or media > 0.5:
+                if d >= 2 or media > u_suelta:
                     out.append({"i": ini, "d": d, "m": p + MIDI_BASE, "f": media})
                 ini = None
             if suena and ini is None:
                 # una nota arranca con ataque, o si viene de silencio con activación clara
-                if nuevo or act[s, p] > u_nota + 0.1:
+                if nuevo or act[s, p] > u_nota + margen:
                     ini, fuerza = s, []
             if ini is not None and suena:
                 fuerza.append(act[s, p])
@@ -121,7 +127,7 @@ def notas(ruta, cache, bordes, rango, max_voces=6, u_nota=0.32, u_ataque=0.5):
     limpio = []
     for i, grupo in por_inicio.items():
         tonos = {n["m"]: n["f"] for n in grupo}
-        grupo = [n for n in grupo if not any(tonos.get(n["m"] - k, 0) > n["f"] * 1.6 for k in (12, 19, 24))]
+        grupo = [n for n in grupo if not any(tonos.get(n["m"] - k, 0) > n["f"] * f_armonico for k in (12, 19, 24))]
         grupo.sort(key=lambda n: -n["f"])
         limpio += grupo[:max_voces]
     limpio.sort(key=lambda n: (n["i"], n["m"]))

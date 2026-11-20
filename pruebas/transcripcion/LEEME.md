@@ -56,3 +56,19 @@ Métricas (las de MIREX, con `mir_eval`), en % promediado sobre los fragmentos:
 - YourMT3 no se adoptó por ahora: es 30-50 veces más lento (un tema de 4 minutos sumaría unos 6 minutos por
   pista transcripta), pesa 536 MB (no entra en el repo de GitHub), pide una versión vieja de `transformers` y
   su código es GPL-3.0 (usarlo dentro de la app obligaría a publicarla bajo GPL).
+
+## Umbrales del armado de notas (2026-11-20)
+
+`python umbrales.py "<ruta>\pruebas\guitarset" "<ruta>\pruebas\egdb"` mide el armado de notas **de la app**
+(`transcribir.armar`, la grilla de semicorcheas) y barre sus umbrales (432 combinaciones). Una nota cuenta si
+cae en la semicorchea correcta y con la altura correcta. F = equilibrio entre precisión (P) y recall (R):
+
+| | GuitarSet | EGDB Plexi | EGDB reales |
+| --- | --- | --- | --- |
+| Umbrales actuales | P 70,5 · R 78,0 · **F 73,0** | P 56,5 · R 51,9 · **F 51,8** | P 49,3 · R 82,0 · **F 61,0** |
+| Mejor del barrido (nota 0,3, ataque 0,6, suelta 0,6, margen 0,2) | F 71,2 | F 52,1 | F 63,1 |
+| Más estrictos (nota 0,36, suelta 0,6, margen 0,2) | F 71,7 | F 48,4 | F 65,6 |
+
+Subir los umbrales saca notas de más pero pierde notas reales casi en la misma medida: lo mejor gana 1-2 puntos
+en eléctrica y pierde 1,5 en GuitarSet (y las grabaciones reales son solo 5). **No se cambiaron**: los actuales
+ya están cerca del óptimo; las notas de más no se arreglan con umbrales.
