@@ -6,6 +6,19 @@ Lo nuevo de cada versión de Maquinitabs, de la más reciente a la más vieja. L
 
 ## [Sin publicar]
 
+### Arreglado
+
+- **Las notas de guitarra, piano y otros se atrasaban** a lo largo del tema (~6 ms por segundo: más de 1 s al
+  final de un tema de 4 minutos), al unir las ventanas del modelo Basic Pitch. En la partitura y la tab caían en
+  la semicorchea equivocada, y la hoja de acordes por instrumento salía corrida. Medido con GuitarSet: las notas
+  correctas pasaron de 34 % a 81 %. Hay que volver a analizar los temas para verlo (las transcripciones
+  guardadas se rehacen solas).
+
+### Agregado
+
+- Set de prueba de transcripción (`pruebas/transcripcion`): compara modelos nota por nota con GuitarSet y EGDB
+  (guitarra eléctrica). Se probó YourMT3: mejora poco con guitarra eléctrica y es 30-50 veces más lento.
+
 ## [1.2.0] - 2026-11-19
 
 ### Agregado

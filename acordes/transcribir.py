@@ -16,6 +16,7 @@ FPS = SR / HOP
 N_MUESTRAS = SR * 2 - HOP            # ventana del modelo
 SOLAPE = 30                          # cuadros
 MIDI_BASE = 21                       # el bin 0 es el La más grave del piano
+VERSION_CACHE = 2                    # 2 = tiempos corregidos (sin el atraso acumulado); las de antes se rehacen
 
 _sesion = None
 
@@ -48,10 +49,21 @@ def activaciones(y):
         nota.append(n)
         ataque.append(a)
     cuadros = int(largo * FPS / SR)
+    # Cada ventana avanza `paso` muestras (141,3 cuadros) pero de cada una se conservan 142 cuadros: pegarlos
+    # uno detrás de otro atrasa las notas ~6 ms por segundo (más de 1 s al final de un tema de 4 minutos;
+    # medido contra GuitarSet). Por eso se calcula el tiempo real de cada cuadro conservado —el cuadro j de la
+    # ventana w está en la muestra w*paso + j*HOP del audio original— y se pasa a una grilla pareja a FPS.
+    por_ventana = nota[0].shape[1] - SOLAPE
 
     def unir(xs):
         x = np.concatenate(xs)[:, SOLAPE // 2:-(SOLAPE // 2), :]
-        return x.reshape(-1, x.shape[2])[:cuadros]
+        w, j = np.divmod(np.arange(x.shape[0] * x.shape[1]), por_ventana)
+        t_real = (w * paso + j * HOP) / SR
+        x = x.reshape(-1, x.shape[2])
+        t_grilla = np.arange(cuadros) / FPS
+        k = np.clip(np.searchsorted(t_real, t_grilla), 1, len(t_real) - 1)
+        k -= (t_grilla - t_real[k - 1]) < (t_real[k] - t_grilla)          # el cuadro más cercano
+        return x[k]
 
     return unir(nota), unir(ataque)
 
@@ -59,15 +71,15 @@ def activaciones(y):
 def notas(ruta, cache, bordes, rango, max_voces=6, u_nota=0.32, u_ataque=0.5):
     """bordes: tiempos de los bordes de las casillas (semicorcheas). rango: (midi mín, midi máx)."""
     import librosa
-    if cache and os.path.exists(cache) and os.path.getmtime(cache) >= os.path.getmtime(ruta):
-        z = np.load(cache)
+    z = np.load(cache) if cache and os.path.exists(cache) and os.path.getmtime(cache) >= os.path.getmtime(ruta) else None
+    if z is not None and "version" in z.files and int(z["version"]) >= VERSION_CACHE:
         nota, ataque = z["nota"].astype(np.float32) / 255, z["ataque"].astype(np.float32) / 255
     else:
         y, _ = librosa.load(ruta, sr=SR, mono=True)
         nota, ataque = activaciones(y)
         if cache:
             np.savez_compressed(cache, nota=np.round(nota * 255).astype(np.uint8),
-                                ataque=np.round(ataque * 255).astype(np.uint8))
+                                ataque=np.round(ataque * 255).astype(np.uint8), version=VERSION_CACHE)
     if not len(nota):
         return []
     lo, hi = max(rango[0], MIDI_BASE) - MIDI_BASE, min(rango[1], MIDI_BASE + 87) - MIDI_BASE
