@@ -15,3 +15,7 @@ presets/
 # servidor: temas y Caddyfile (tiene el usuario y la contraseña cifrada)
 servidor/canciones/
 servidor/Caddyfile
+
+# GuitarSet (set de prueba de transcripción, se baja con pruebas/transcripcion)
+pruebas/guitarset/
+pruebas/egdb/
