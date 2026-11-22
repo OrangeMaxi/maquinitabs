@@ -6,6 +6,15 @@ Lo nuevo de cada versión de Maquinitabs, de la más reciente a la más vieja. L
 
 ## [Sin publicar]
 
+### Agregado
+
+- **Volumen general**, primero en el panel de pistas: sube o baja (o silencia con «M») todas las pistas, el
+  metrónomo y la cuenta previa juntos. Se recuerda entre temas.
+- Set de prueba de transcripción (`pruebas/transcripcion`): compara modelos nota por nota con GuitarSet y EGDB
+  (guitarra eléctrica). Se probó YourMT3: mejora poco con guitarra eléctrica y es 30-50 veces más lento.
+- `pruebas/transcripcion/umbrales.py`: mide el armado de notas de la app en la grilla de semicorcheas y barre sus
+  umbrales. Los actuales ya están cerca del óptimo, así que no se cambiaron.
+
 ### Arreglado
 
 - **Las notas de guitarra, piano y otros se atrasaban** a lo largo del tema (~6 ms por segundo: más de 1 s al
@@ -13,13 +22,6 @@ Lo nuevo de cada versión de Maquinitabs, de la más reciente a la más vieja. L
   la semicorchea equivocada, y la hoja de acordes por instrumento salía corrida. Medido con GuitarSet: las notas
   correctas pasaron de 34 % a 81 %. Hay que volver a analizar los temas para verlo (las transcripciones
   guardadas se rehacen solas).
-
-### Agregado
-
-- Set de prueba de transcripción (`pruebas/transcripcion`): compara modelos nota por nota con GuitarSet y EGDB
-  (guitarra eléctrica). Se probó YourMT3: mejora poco con guitarra eléctrica y es 30-50 veces más lento.
-- `pruebas/transcripcion/umbrales.py`: mide el armado de notas de la app en la grilla de semicorcheas y barre sus
-  umbrales. Los actuales ya están cerca del óptimo, así que no se cambiaron.
 
 ## [1.2.0] - 2026-11-19
 

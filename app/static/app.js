@@ -256,6 +256,18 @@ function ctxAudio() {
   if (!A.ctx) A.ctx = new (window.AudioContext || window.webkitAudioContext)();
   return A.ctx;
 }
+function salida() {                    // volumen general: pistas, metrónomo y cuenta previa pasan por acá
+  const ctx = ctxAudio();
+  if (!A.general) { A.general = ctx.createGain(); A.general.connect(ctx.destination); aplicarGeneral(); }
+  return A.general;
+}
+function aplicarGeneral() {            // se recuerda entre temas
+  const mudo = recordar('general.mudo') === '1';
+  const vol = recordar('general.vol') != null ? +recordar('general.vol') : 1;
+  if (A.general) A.general.gain.value = mudo ? 0 : vol;
+  const fila = $('.pista.general');
+  if (fila) fila.classList.toggle('apagada', mudo);
+}
 async function cargarAudio() {
   const turno = ++A.carga;
   const estabaTocando = A.tocando;
@@ -283,7 +295,7 @@ async function cargarAudio() {
   }
   if (turno !== A.carga) return;
   A.buffers = nuevos;
-  pistas.forEach((p) => { if (!A.gains[p.id]) { A.gains[p.id] = ctx.createGain(); A.gains[p.id].connect(ctx.destination); } });
+  pistas.forEach((p) => { if (!A.gains[p.id]) { A.gains[p.id] = ctx.createGain(); A.gains[p.id].connect(salida()); } });
   aplicarMezcla();
   A.listo = true;
   $('#btn-play').disabled = false;
@@ -342,6 +354,7 @@ const ICONOS = {
   drums: '<svg viewBox="0 0 24 24"><path d="M4 20 17.5 6.5M20 20 6.5 6.5"/><circle cx="18.6" cy="5.4" r="1.6" fill="currentColor"/><circle cx="5.4" cy="5.4" r="1.6" fill="currentColor"/><ellipse cx="12" cy="18.5" rx="7" ry="2.3"/></svg>',
   otros: '<svg viewBox="0 0 24 24"><path d="M2.5 11h3v2h-3zM5.5 12h8.5"/><path d="M14 9.5 21.5 6v12L14 14.5z"/><path d="M8 12V9M10.5 12V9M13 12V9"/><path d="M7.5 15.5c1.5 1.6 4.5 1.6 6 0"/></svg>',
   other: '<svg viewBox="0 0 24 24"><path d="M9 18V6l11-2.5v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="15.5" r="2.5"/></svg>',
+  general: '<svg viewBox="0 0 24 24"><path d="M3.5 9.5h4l5-4.5v14l-5-4.5h-4z"/><path d="M16 9a4.5 4.5 0 0 1 0 6M18.8 6.2a8.5 8.5 0 0 1 0 11.6"/></svg>',
   metro: '<svg viewBox="0 0 24 24"><path d="M9.5 3h5l4 18h-13z"/><path d="M6.5 16.5h11M12 16.5 17 6"/><circle cx="15.6" cy="9" r="1.2" fill="currentColor"/></svg>',
 };
 function recordar(clave, valor) {
@@ -366,7 +379,7 @@ function aplicarPreferencias() {
 aplicarPreferencias();
 function gananciaMetro() {             // a esta van los clics del metrónomo (la cuenta previa va directo)
   const ctx = ctxAudio();
-  if (!A.gMetro) { A.gMetro = ctx.createGain(); A.gMetro.connect(ctx.destination); }
+  if (!A.gMetro) { A.gMetro = ctx.createGain(); A.gMetro.connect(salida()); }
   return A.gMetro;
 }
 function aplicarMezcla() {
@@ -387,11 +400,26 @@ function pintarMezclador() {
       <button class="m${E.mute[id] ? ' on' : ''}" title="${id === 'metro' ? 'Prender o apagar el metrónomo' : 'Mutear'}">M</button><button class="s" title="Solo">S</button>
       <input type="range" min="0" max="1.5" step="0.01" value="${vol}" title="Volumen">
     </div>`;
-  $('#mezclador').innerHTML = E.c.pistas.map((p) => fila(p.id, p.nombre, COLORES[p.id],
+  const volGeneral = recordar('general.vol') != null ? recordar('general.vol') : 1;
+  const general = `
+    <div class="pista general" data-id="general">
+      <span class="icono" aria-hidden="true">${ICONOS.general}</span>
+      <div class="nombre">Volumen general</div>
+      <button class="m${recordar('general.mudo') === '1' ? ' on' : ''}" title="Silenciar todo">M</button>
+      <input type="range" min="0" max="1.5" step="0.01" value="${volGeneral}" title="Volumen general">
+    </div>`;
+  $('#mezclador').innerHTML = general + E.c.pistas.map((p) => fila(p.id, p.nombre, COLORES[p.id],
     p.nivel < 0.04 ? '<small>casi no suena en este tema</small>'
       : p.id === 'otros' && nombreOtros() !== 'Otros' ? `<small>${esc(nombreOtros().toLowerCase())}</small>` : '', 1)).join('')
     + fila('metro', 'Metrónomo', '#9ca3af', '', E.vol.metro);
-  $$('.pista').forEach((f) => {
+  const g = $('.pista.general');
+  $('.m', g).onclick = (ev) => {
+    const mudo = recordar('general.mudo') !== '1';
+    recordar('general.mudo', mudo ? '1' : '0'); ev.target.classList.toggle('on', mudo); aplicarGeneral();
+  };
+  $('input', g).oninput = (ev) => { recordar('general.vol', ev.target.value); aplicarGeneral(); };
+  aplicarGeneral();
+  $$('.pista:not(.general)').forEach((f) => {
     const id = f.dataset.id;
     $('.m', f).onclick = (ev) => {
       E.mute[id] = !E.mute[id]; ev.target.classList.toggle('on', E.mute[id]); aplicarMezcla();
@@ -1074,7 +1102,7 @@ function clic(cuando, fuerte, cuenta) {
   g.gain.exponentialRampToValueAtTime(fuerte ? 0.32 : 0.2, cuando + 0.002);
   g.gain.exponentialRampToValueAtTime(0.0001, cuando + 0.05);
   // la cuenta previa suena aunque el metrónomo esté apagado, con su mismo volumen
-  if (cuenta) { const v = ctx.createGain(); v.gain.value = Math.max(E.vol.metro, 0.3); o.connect(g).connect(v).connect(ctx.destination); }
+  if (cuenta) { const v = ctx.createGain(); v.gain.value = Math.max(E.vol.metro, 0.3); o.connect(g).connect(v).connect(salida()); }
   else o.connect(g).connect(gananciaMetro());
   o.start(cuando); o.stop(cuando + 0.07);
   M.nodos.add(o);
