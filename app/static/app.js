@@ -19,7 +19,13 @@ const E = {
   compasActual: -1, acordeActual: '',
   mute: {}, solo: {}, vol: {},
 };
-const A = { ctx: null, buffers: {}, gains: {}, fuentes: [], tocando: false, pos: 0, t0: 0, carga: 0, listo: false };
+const A = {
+  ctx: null, buffers: {}, gains: {}, fuentes: [], tocando: false, pos: 0, carga: 0, listo: false,
+  vel: 1,                       // velocidad de reproducción (1 = normal)
+  tramos: [],                   // mientras suena: [{t: hora del contexto, pos: posición del tema, r: velocidad}]
+  lat: 0,                       // atraso de la cadena de audio (el del transportador en vivo, si se usa)
+  grupos: null, motor: null, motorFallo: false,   // transporte en vivo (ver «transporte y velocidad en vivo»)
+};
 
 // ================================================================= biblioteca y trabajos
 async function cargarLista() {
@@ -109,6 +115,9 @@ async function abrir(id) {
   E.mute.metro = recordar('metro') !== '1';
   E.vol.metro = recordar('metro.vol') != null ? +recordar('metro.vol') : 0.7;
   A.pos = 0;
+  A.vel = 1;                     // cada tema arranca en su tono y a velocidad normal
+  if (A.ctx) ajustarMotor(A.ctx.currentTime);
+  pintarVelocidad();
   $$('#lista li').forEach((li) => li.classList.toggle('activa', li.dataset.id === id));
   ['#pestanas', '#reproductor', '#panel-pistas'].forEach((s) => { $(s).hidden = false; });
   if (cajon()) ponerPanel(false);
@@ -280,9 +289,10 @@ async function cargarAudio() {
   const estado = () => { $('#estado-audio').textContent = `${E.st ? 'transportando' : 'cargando'} ${hechas}/${pistas.length}…`; };
   estado();
   const nuevos = {};
+  const st = enVivo() ? 0 : E.st;       // en vivo se baja el audio original y el tono lo cambia el navegador
   try {
     await Promise.all(pistas.map(async (p) => {
-      const r = await fetch(`/api/canciones/${encodeURIComponent(E.id)}/audio/${p.id}?st=${E.st}`);
+      const r = await fetch(`/api/canciones/${encodeURIComponent(E.id)}/audio/${p.id}?st=${st}`);
       if (!r.ok) throw new Error('No pude cargar la pista ' + p.nombre);
       const buf = await ctx.decodeAudioData(await r.arrayBuffer());
       if (turno !== A.carga) return;
@@ -295,16 +305,27 @@ async function cargarAudio() {
   }
   if (turno !== A.carga) return;
   A.buffers = nuevos;
-  pistas.forEach((p) => { if (!A.gains[p.id]) { A.gains[p.id] = ctx.createGain(); A.gains[p.id].connect(salida()); } });
+  pistas.forEach((p) => { if (!A.gains[p.id]) { A.gains[p.id] = ctx.createGain(); A.gains[p.id].connect(destinoDe(p.id)); } });
   aplicarMezcla();
   A.listo = true;
   $('#btn-play').disabled = false;
   $('#estado-audio').textContent = '';
   if (estabaTocando) tocar();
 }
-function tiempo() {
+// Reloj: las fuentes avanzan por tramos de velocidad constante (A.tramos) y se oyen A.lat más tarde.
+function posFuente(t) {              // posición del tema que las fuentes están leyendo a la hora t del contexto
+  let s = A.tramos[0];
+  for (const x of A.tramos) if (x.t <= t) s = x;
+  return s.pos + Math.max(0, t - s.t) * s.r;
+}
+function cuandoSuena(pos) {          // hora del contexto en que se oye esa posición del tema
+  let s = A.tramos[0];
+  for (const x of A.tramos) if (x.pos <= pos) s = x;
+  return s.t + (pos - s.pos) / s.r + A.lat;
+}
+function tiempo() {                  // lo que se está oyendo
   if (!A.tocando) return A.pos;
-  return Math.min(E.c.duracion, A.pos + Math.max(0, A.ctx.currentTime - A.t0));
+  return Math.min(E.c.duracion, posFuente(A.ctx.currentTime - A.lat));
 }
 function tocar(sinCuenta) {
   if (!A.listo || A.tocando) return;
@@ -312,17 +333,18 @@ function tocar(sinCuenta) {
   ctx.resume();
   if (A.pos >= E.c.duracion - 0.2) A.pos = 0;
   let cuando = ctx.currentTime + 0.06;
-  if ($('#cuenta').checked && !sinCuenta) cuando += cuentaPrevia(cuando);
+  if ($('#cuenta').checked && !sinCuenta) cuando += cuentaPrevia(cuando + A.lat);
+  A.tramos = [{ t: cuando, pos: A.pos, r: A.vel }];
   M.sig = primerPulsoDesde(A.pos);
   M.reloj = setInterval(programarMetro, 50);
   A.fuentes = E.c.pistas.map((p) => {
     const f = ctx.createBufferSource();
     f.buffer = A.buffers[p.id];
+    f.playbackRate.value = A.vel;
     f.connect(A.gains[p.id]);
     f.start(cuando, A.pos);
     return f;
   });
-  A.t0 = cuando;
   A.tocando = true;
   $('#btn-play').textContent = '❚❚';
 }
@@ -344,6 +366,109 @@ function ir(t) {
   saltoManual = !!(b && A.pos >= finCompas(b.fin));   // fue más allá del tramo a repetir (clic en otro compás)
   if (era) tocar(true);         // al saltar o repetir una sección no se vuelve a contar
   refrescar(true);
+}
+
+// ----------------------------------------------------------------- transporte y velocidad en vivo
+// Con Signalsmith Stretch (vendor/signalsmith-stretch.js, un AudioWorklet) el tono y la velocidad cambian
+// mientras suena, sin volver a bajar el audio. Las pistas se mezclan en tres grupos y cada uno pasa por su
+// transportador: voz (con corrección de formantes, como el transporte del servidor), instrumentos con tono
+// y batería (que solo se corrige cuando cambia la velocidad). La velocidad la da playbackRate de las fuentes,
+// que también mueve el tono, y el transportador lo compensa. Cada grupo tiene además un camino «seco»,
+// atrasado lo mismo que el transportador, para que a tono y velocidad originales suene tal cual y todo siga
+// sincronizado. El AudioWorklet solo existe en un contexto seguro (https o localhost): si no, el tono se
+// transporta en el servidor, como antes, y no hay control de velocidad.
+const GRUPO = { vocals: 'voz', drums: 'bat' };          // el resto de las pistas va a 'inst'
+const VEL_MIN = 0.5, VEL_MAX = 1.5;
+const enVivo = () => !A.motorFallo && window.isSecureContext && 'AudioWorkletNode' in window && typeof SignalsmithStretch === 'function';
+const destinoDe = (id) => (A.grupos ? A.grupos[GRUPO[id] || 'inst'].entrada : salida());
+function asegurarMotor() {
+  if (!A.motor) {
+    A.motor = (async () => {
+      const ctx = ctxAudio(), grupos = {};
+      let lat = 0;
+      for (const id of ['voz', 'inst', 'bat']) {
+        const nodo = await SignalsmithStretch(ctx);
+        await nodo.start();
+        lat = await nodo.latency();
+        const entrada = ctx.createGain(), demora = ctx.createDelay(1), seco = ctx.createGain(), mojado = ctx.createGain();
+        demora.delayTime.value = lat;
+        mojado.gain.value = 0;
+        entrada.connect(demora).connect(seco).connect(salida());
+        entrada.connect(nodo).connect(mojado).connect(salida());
+        grupos[id] = { nodo, entrada, seco, mojado, transportado: false };
+      }
+      // de acá en más todo suena `lat` más tarde: si estaba sonando, se vuelve a arrancar (una sola vez)
+      const era = A.tocando;
+      pausar();
+      A.grupos = grupos;
+      A.lat = lat;
+      Object.entries(A.gains).forEach(([id, g]) => { g.disconnect(); g.connect(destinoDe(id)); });
+      if (era) tocar(true);
+    })();
+    A.motor.catch(() => {                  // sin AudioWorklet o sin WASM: el tono vuelve a ir por el servidor
+      A.motorFallo = true;
+      pintarVelocidad();
+      if (E.c && E.st) cargarAudio();
+    });
+  }
+  return A.motor;
+}
+// Pone cada grupo en el tono y la velocidad actuales (E.st, A.vel) a partir de la hora `cuando` del contexto.
+function ajustarMotor(cuando) {
+  if (!A.grupos) return;
+  const sv = 12 * Math.log2(A.vel);        // lo que ya movió el tono la velocidad de las fuentes
+  const t = Math.max(cuando, A.ctx.currentTime);
+  const conTono = E.st !== 0 || A.vel !== 1;
+  const grupos = {
+    voz: [conTono, { semitones: E.st - sv, formantCompensation: true, formantSemitones: -sv }],
+    inst: [conTono, { semitones: E.st - sv, formantCompensation: false, formantSemitones: 0 }],
+    bat: [A.vel !== 1, { semitones: -sv, formantCompensation: false, formantSemitones: 0 }],
+  };
+  Object.entries(grupos).forEach(([id, [transportado, params]]) => {
+    const g = A.grupos[id];
+    g.nodo.schedule({ output: t, ...params });
+    if (transportado === g.transportado) return;
+    g.transportado = transportado;
+    fundido(g.seco.gain, transportado ? 0 : 1, t);
+    fundido(g.mojado.gain, transportado ? 1 : 0, t);
+  });
+}
+function fundido(param, valor, t) {
+  param.cancelScheduledValues(t);
+  param.setValueAtTime(param.value, t);
+  param.linearRampToValueAtTime(valor, t + 0.04);
+}
+function ponerTono() {                     // E.st ya cambió
+  if (!enVivo()) { cargarAudio(); return; }
+  asegurarMotor().then(() => ajustarMotor(A.ctx.currentTime), () => {});
+}
+function ponerVelocidad(v) {
+  v = Math.round(Math.max(VEL_MIN, Math.min(VEL_MAX, v)) * 100) / 100;
+  if (v === A.vel || !enVivo()) return;
+  asegurarMotor().then(() => {
+    const ctx = A.ctx, ahora = ctx.currentTime;
+    if (A.tocando && ahora < A.tramos[0].t) {          // todavía en la cuenta previa: se arranca de nuevo
+      pausar(); A.vel = v; tocar();
+    } else {
+      if (A.tocando) {
+        A.tramos.push({ t: ahora, pos: posFuente(ahora), r: v });
+        A.fuentes.forEach((f) => f.playbackRate.setValueAtTime(v, ahora));
+      }
+      A.vel = v;
+      if (A.tocando) reprogramarMetro();
+    }
+    ajustarMotor(ahora + A.lat);                       // el cambio de velocidad se oye A.lat más tarde
+    pintarVelocidad();
+  }, () => {});
+}
+function pintarVelocidad() {
+  const ok = enVivo();
+  $('#velocidad').textContent = Math.round(A.vel * 100) + '%';
+  $('#vel-valor').textContent = A.vel === 1 ? 'normal' : A.vel < 1 ? 'más lento' : 'más rápido';
+  $('#vel-menos').disabled = !ok || A.vel <= VEL_MIN;
+  $('#vel-mas').disabled = !ok || A.vel >= VEL_MAX;
+  $('.velocidad').title = ok ? 'Velocidad, sin cambiar el tono'
+    : 'Para cambiar la velocidad (y transportar al instante) hay que abrir la app con https o en esta misma compu (localhost)';
 }
 // íconos de las pistas (trazo con el color de la pista)
 const ICONOS = {
@@ -1105,6 +1230,7 @@ function clic(cuando, fuerte, cuenta) {
   if (cuenta) { const v = ctx.createGain(); v.gain.value = Math.max(E.vol.metro, 0.3); o.connect(g).connect(v).connect(salida()); }
   else o.connect(g).connect(gananciaMetro());
   o.start(cuando); o.stop(cuando + 0.07);
+  Object.assign(o, { cuando, cuenta });
   M.nodos.add(o);
   o.onended = () => M.nodos.delete(o);
 }
@@ -1113,26 +1239,34 @@ function periodoEn(t) {
   const bs = E.c.beats, j = Math.min(primerPulsoDesde(t), bs.length - 2), k = Math.min(bs.length - 1, j + 4);
   return k > j ? (bs[k] - bs[j]) / (k - j) : 60 / E.c.tempo;
 }
-// Cuenta de un compás antes de arrancar, alineada con la grilla de pulsos. Devuelve cuánto dura.
+// Cuenta de un compás antes de arrancar, alineada con la grilla de pulsos y a la velocidad elegida.
+// `desde` = hora del contexto en que se oye el primer clic. Devuelve cuánto dura.
 function cuentaPrevia(desde) {
   const n = E.c.compas, p = periodoEn(A.pos);
   const j = primerPulsoDesde(A.pos);
-  const desfase = j < E.c.beats.length - 1 ? (E.c.beats[j] - A.pos) % p : 0;
+  const desfase = (j < E.c.beats.length - 1 ? (E.c.beats[j] - A.pos) % p : 0) / A.vel;
+  const pv = p / A.vel;
   for (let k = 0; k < n; k++) {
-    const cuando = desde + desfase + k * p;
+    const cuando = desde + desfase + k * pv;
     clic(cuando, k === 0, true);
     M.esperas.push(setTimeout(() => { $('#acorde-actual').textContent = k + 1; $('#seccion-actual').textContent = 'cuenta'; }, (cuando - A.ctx.currentTime) * 1000));
   }
-  M.esperas.push(setTimeout(() => refrescar(true), n * p * 1000 + 40));
-  return n * p;
+  M.esperas.push(setTimeout(() => refrescar(true), (desde - A.ctx.currentTime + n * pv) * 1000 + 40));
+  return n * pv;
 }
 function programarMetro() {
   if (!A.tocando) return;      // se programa siempre: prenderlo o apagarlo en el mezclador es instantáneo
-  const bs = E.c.beats, hasta = tiempo() + 0.25;
+  const bs = E.c.beats, hasta = tiempo() + 0.3 * A.vel;
   while (M.sig < bs.length - 1 && bs[M.sig] < hasta) {
-    if (bs[M.sig] >= A.pos - 0.001) clic(A.t0 + (bs[M.sig] - A.pos), E.unos.has(M.sig));
+    if (bs[M.sig] >= A.pos - 0.001) clic(cuandoSuena(bs[M.sig]), E.unos.has(M.sig));
     M.sig++;
   }
+}
+function reprogramarMetro() {  // cambió la velocidad: los clics que todavía no sonaron se vuelven a calcular
+  const ahora = A.ctx.currentTime;
+  M.nodos.forEach((o) => { if (o.cuando > ahora && !o.cuenta) { o.onended = null; o.stop(); o.disconnect(); M.nodos.delete(o); } });
+  M.sig = primerPulsoDesde(tiempo());
+  programarMetro();
 }
 function pararMetro() {
   clearInterval(M.reloj);
@@ -1351,10 +1485,13 @@ function transportar(d) {
   if (st === E.st) return;
   E.st = st;
   pintar();
-  cargarAudio();
+  ponerTono();
 }
 $('#st-menos').onclick = () => transportar(-1);
 $('#st-mas').onclick = () => transportar(1);
+$('#vel-menos').onclick = () => ponerVelocidad(A.vel - 0.05);
+$('#vel-mas').onclick = () => ponerVelocidad(A.vel + 0.05);
+pintarVelocidad();
 $('#btn-imprimir').onclick = () => window.print();
 
 const dlg = $('#dlg-estructura');

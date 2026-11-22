@@ -50,7 +50,7 @@ body.trabajando .engranajes .eng-chico { animation: giro-chico-ya 2.5s linear in
 @keyframes giro-grande-ya { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 @keyframes giro-chico-ya { from { transform: rotate(25.7deg); } to { transform: rotate(-488.6deg); } }
 
-#form-url { display: flex; gap: 8px; flex: 1; max-width: 760px; align-items: center; }
+#form-url { display: flex; gap: 8px; flex: 1; min-width: 0; max-width: 760px; align-items: center; }
 #form-url input { flex: 1; min-width: 0; background: var(--fondo); border: 1px solid var(--borde); border-radius: 6px; padding: 7px 12px; }
 /* botón Analizar = locomotora */
 .subir { display: grid; place-items: center; padding: 6px 8px; background: transparent; color: var(--tenue); }
@@ -163,7 +163,7 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .ed-linea small { color: #777; }
 .editor button { background: #fff; color: #333; border: 1px solid #bbb; padding: 4px 10px; }
 .editor button.primario { background: var(--acento); border-color: var(--acento); color: #06281a; }
-.editor button:disabled, .pestanas button:disabled { opacity: .4; cursor: default; }
+.editor button:disabled, .pestanas button:disabled, .transporte button:disabled { opacity: .4; cursor: default; }
 .editor .selector button { border: 0; }
 .editor .selector button.on { background: var(--tinta); color: #fff; }
 #ed-pulsos { display: inline-flex; gap: 6px; }
@@ -208,7 +208,7 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 
 /* ------------------------------------------------ reproductor */
 /* reproductor: mando (inicio, play, tiempo, barra) a lo ancho; acorde, interruptores y tonalidad repartidos parejo */
-.reproductor { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 10px 22px; background: var(--panel); border-top: 1px solid var(--borde); }
+.reproductor { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 28px; padding: 10px 22px; background: var(--panel); border-top: 1px solid var(--borde); }
 .mando { flex: 1; min-width: 240px; display: flex; align-items: center; gap: 14px; }
 .interruptor { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; color: var(--tenue); user-select: none; }
 .interruptor input { position: absolute; opacity: 0; pointer-events: none; }
@@ -240,6 +240,12 @@ main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: colu
 .transporte small { display: block; color: var(--tenue); font-size: 10.5px; }
 .transporte b { font-size: 17px; }
 .transporte button { width: 30px; height: 30px; padding: 0; font-size: 17px; }
+@media (max-width: 1180px) {           /* compus chicas: tono y velocidad siguen en el mismo renglón */
+  .reproductor { column-gap: 14px; }
+  .mando { min-width: 190px; }
+  .acorde-actual { min-width: 70px; }
+  .bucle select { max-width: 115px; }
+}
 
 dialog { background: var(--panel); color: var(--texto); border: 1px solid var(--borde); border-radius: 10px; width: min(560px, 92vw); padding: 18px 20px; }
 dialog::backdrop { background: #000a; }
@@ -305,16 +311,18 @@ dialog .version a { color: var(--tenue); }
   .acorde-actual small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .acorde-actual b { font-size: 20px; }
   .interruptor small { display: none; }
-  .interruptor svg { width: 38px; height: 38px; }
   .bucle { display: contents; }
   .bucle .rango { order: 10; flex: 1 1 100%; min-width: 0; flex-direction: row; gap: 10px; }
   .bucle:not(.on) .rango { display: none; }
   .bucle .rango span { flex: 1; min-width: 0; }
   .bucle select { flex: 1; min-width: 0; max-width: none; padding: 2px 4px; }
-  .transporte { gap: 4px; }
+  .transporte { gap: 3px; }
   .transporte div { min-width: 40px; }
   .transporte small { display: none; }
-  .transporte button { width: 34px; height: 34px; }
+  .transporte b { font-size: 15px; }
+  .transporte button { width: 30px; height: 32px; }
+  .interruptor svg { width: 34px; height: 34px; padding: 7px; }
+  .velocidad { margin-left: 4px; }
 
   /* hoja */
   #vista { padding: 8px; }
@@ -355,6 +363,14 @@ dialog .version a { color: var(--tenue); }
   .impro td { border: 0; padding: 3px 8px; }
   .impro td.ac { white-space: normal; }
   .impro td[data-l]::before { content: attr(data-l); display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #777; }
+}
+
+@media (max-width: 380px) {
+  /* celulares angostos: tono y velocidad siguen entrando en el mismo renglón */
+  .reproductor { column-gap: 5px; padding-left: 8px; padding-right: 8px; }
+  .transporte div { min-width: 34px; }
+  .transporte b { font-size: 14px; }
+  .transporte button { width: 28px; }
 }
 
 @media (max-width: 600px), (max-height: 500px) {

@@ -136,8 +136,13 @@ Las canciones se guardan en la carpeta que contiene a `_herramientas`. Para usar
    mencionan como referencia. Sin internet (o con `SIN_INTERNET=1`) queda como «Otros».
 4. Abajo: volver al principio (tecla Inicio), reproducir (barra espaciadora), los botones **Cuenta**
    (un compás de clics antes de arrancar) y **Repetir** (verde = prendido; elegís desde qué compás hasta
-   cuál, arranca con la sección que está sonando y el tramo queda marcado en la hoja) y transporte de tonalidad
-   (cambia el audio y toda la notación).
+   cuál, arranca con la sección que está sonando y el tramo queda marcado en la hoja), **Tonalidad** (transporta
+   el audio y toda la notación, de −6 a +6 semitonos) y **Velocidad** (del 50 % al 150 %, sin cambiar el tono;
+   el metrónomo y la cuenta previa la siguen). Tonalidad y velocidad cambian al instante, incluso mientras suena:
+   el tono lo cambia el navegador, sin volver a bajar el audio. Eso necesita abrir la app en la misma compu
+   (`localhost`) o con `https` (como en el servidor en internet). Desde otro dispositivo por `http://<IP>:5055`
+   la tonalidad se transporta en el servidor (tarda unos segundos la primera vez en cada tono) y no hay
+   control de velocidad.
 5. **Imprimir** saca la vista actual en papel o PDF.
 6. Los **engranajes** del logo abren la **Configuración**, que se guarda en cada navegador (cada uno la puede
    tener distinta en su celular): tema claro, oscuro o del sistema; hoja oscura para poca luz; tamaño de la
@@ -175,6 +180,9 @@ Las correcciones se guardan en la carpeta de cada tema (`correcciones.json` y `e
 - **El puerto 5055 está ocupado**: definí `PUERTO` antes de arrancar, por ejemplo `$env:PUERTO = "8080"`.
 - **Va muy lento**: la separación usa solo el procesador. En Docker Desktop conviene asignarle al menos
   4 núcleos y 6 GB de memoria (Settings → Resources).
+- **La velocidad está desactivada y cambiar la tonalidad tarda**: la app está abierta por `http` desde otro
+  dispositivo. El navegador solo permite el procesamiento de audio en vivo en `localhost` o con `https` (ver
+  «Cómo se usa»).
 
 ## Límites conocidos
 
@@ -209,5 +217,7 @@ Para sacar una versión:
 - Transcripción de guitarra y piano: [Basic Pitch](https://github.com/spotify/basic-pitch) de Spotify,
   licencia Apache 2.0 (`acordes/basic_pitch/LICENSE`).
 - Partituras: [VexFlow](https://www.vexflow.com/), licencia MIT.
+- Tonalidad y velocidad en vivo: [Signalsmith Stretch](https://signalsmith-audio.co.uk/code/stretch/),
+  licencia MIT (`app/static/vendor/signalsmith-stretch.LICENSE.txt`).
 
 Usá la app con música que tengas derecho a descargar.
