@@ -14,9 +14,21 @@ Lo nuevo de cada versión de Maquinitabs, de la más reciente a la más vieja. L
   (guitarra eléctrica). Se probó YourMT3: mejora poco con guitarra eléctrica y es 30-50 veces más lento.
 - `pruebas/transcripcion/umbrales.py`: mide el armado de notas de la app en la grilla de semicorcheas y barre sus
   umbrales. Los actuales ya están cerca del óptimo, así que no se cambiaron.
+- **Velocidad**, al lado de la tonalidad: del 50 % al 150 % sin cambiar el tono, incluso mientras suena. El
+  metrónomo, la cuenta previa y el cursor la siguen. Cada tema arranca a velocidad normal.
+
+### Cambiado
+
+- **La tonalidad cambia al instante**, incluso mientras suena. Antes cada cambio rehacía en el servidor las 5
+  pistas con tono (unos 5 s la primera vez en cada tono) y el navegador volvía a bajar y decodificar las 6 (unos
+  160 MB). Ahora el tono lo cambia el navegador con [Signalsmith Stretch](https://signalsmith-audio.co.uk/code/stretch/)
+  (MIT): la voz por un lado, con corrección de formantes, y los instrumentos por otro; la batería solo se corrige
+  cuando cambia la velocidad. Necesita `localhost` o `https`; desde otro dispositivo por `http` se sigue
+  transportando en el servidor, como antes, y no hay control de velocidad.
 
 ### Arreglado
 
+- En pantallas de 360 px de ancho la barra de arriba se pasaba unos píxeles del borde.
 - **Las notas de guitarra, piano y otros se atrasaban** a lo largo del tema (~6 ms por segundo: más de 1 s al
   final de un tema de 4 minutos), al unir las ventanas del modelo Basic Pitch. En la partitura y la tab caían en
   la semicorchea equivocada, y la hoja de acordes por instrumento salía corrida. Medido con GuitarSet: las notas
