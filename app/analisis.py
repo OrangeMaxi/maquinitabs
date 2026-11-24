@@ -344,6 +344,49 @@ def aplicar_correcciones(out, corr):
     return out
 
 
+def _fuerza_compas(texto):
+    """¿El texto de estructura fuerza el compás de alguna sección («2:48 Puente [7/4]»)?"""
+    return any("[" in l for l in (texto or "").splitlines() if l.strip() and not l.strip().startswith("#"))
+
+
+def aplicar_estructura(base, texto_anterior=None):
+    """Pone las secciones de estructura.txt sin volver a analizar el audio: los nombres y tiempos de las secciones
+    no cambian ni acordes ni pulsos. Devuelve el app.json nuevo, o None si hace falta el análisis completo: si no
+    hay secciones (vuelve a la detección automática) o si alguna sección fuerza un compás ([7/4]), antes o ahora."""
+    ruta_est = os.path.join(base, "estructura.txt")
+    ruta = os.path.join(base, "analisis", "app.json")
+    if not (os.path.exists(ruta_est) and os.path.exists(ruta)):
+        return None
+    with open(ruta_est, encoding="utf-8") as f:
+        texto = f.read()
+    if _fuerza_compas(texto) or _fuerza_compas(texto_anterior):
+        return None
+    try:
+        entradas = sa.leer_estructura(ruta_est)
+    except ValueError:
+        return None
+    if not entradas:
+        return None
+    with open(ruta, encoding="utf-8") as f:
+        out = json.load(f)
+    corr = leer_correcciones(base)
+    if "base" not in out:
+        aplicar_correcciones(out, corr)
+    b = out["base"]
+    # los compases detectados (sin las correcciones), como los arma el análisis
+    compases, k = [], 0
+    for n in b["largos"]:
+        compases.append({"t": out["beats"][k], "acordes": b["acordes"][k:k + n]})
+        k += n
+    secs = sa.secciones_manual(compases, entradas)
+    if not secs:
+        return None
+    b["secciones"] = [{"nombre": s["nombre"], "letra": s["letra"], "t": s["t"]} for s in secs]
+    aplicar_correcciones(out, corr)
+    guardar(base, out)
+    return out
+
+
 # ---------------------------------------------------------------- análisis completo
 def analizar(base, compas=None, progreso=_noop):
     """compas: 3 o 4 para forzarlo; None = el que eligió el usuario en la app (correcciones.json) o,

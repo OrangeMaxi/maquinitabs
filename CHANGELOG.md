@@ -33,6 +33,11 @@ Lo nuevo de cada versión de Maquinitabs, de la más reciente a la más vieja. L
 
 ### Arreglado
 
+- **Secciones se aplica al instante.** Cambiar nombres o tiempos de las secciones ya no vuelve a analizar el tema
+  (antes tardaba 1-2 minutos y, con el panel oculto, la hoja seguía igual sin avisar: parecía que no tomaba los
+  cambios). Solo se re-analiza al forzar un compás («[7/4]») o al borrar todo para volver a la detección
+  automática, y entonces se abre el panel para ver el progreso. Abrir una hoja compartida con otras secciones
+  también es instantáneo.
 - En pantallas de 360 px de ancho la barra de arriba se pasaba unos píxeles del borde.
 - **Las notas de guitarra, piano y otros se atrasaban** a lo largo del tema (~6 ms por segundo: más de 1 s al
   final de un tema de 4 minutos), al unir las ventanas del modelo Basic Pitch. En la partitura y la tab caían en

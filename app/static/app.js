@@ -1582,9 +1582,14 @@ $('#btn-estructura').onclick = async () => {
 };
 $('#est-cancelar').onclick = () => dlg.close();
 $('#est-guardar').onclick = async () => {
-  const t = await api(`canciones/${encodeURIComponent(E.id)}/estructura`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto: $('#txt-estructura').value }) });
-  dlg.close();
-  seguir(t);
+  try {
+    const r = await api(`canciones/${encodeURIComponent(E.id)}/estructura`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto: $('#txt-estructura').value }) });
+    dlg.close();
+    if (r.cancion) { poner(r.cancion); pintar(); return; }       // nombres y tiempos: al instante
+    // volver a la detección automática o forzar un compás sí re-analiza: que se vea el progreso
+    ponerPanel(true);
+    seguir(r.trabajo);
+  } catch (e) { alert(e.message); }
 };
 
 let redibujo = null;

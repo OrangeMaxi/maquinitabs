@@ -168,7 +168,9 @@ Solo se activa en la vista **Acordes**: la partitura no se edita a mano y la imp
 - **Volver a lo detectado** borra las correcciones de la hoja abierta: en Tema completo, las de acordes y compases
   del tema; en un instrumento, solo las de ese instrumento.
 
-**Secciones** permite cambiar los nombres y los tiempos de las partes del tema.
+**Secciones** permite cambiar los nombres y los tiempos de las partes del tema; se ve al instante. Forzar un compás
+en una sección (`2:48 Puente [7/4]`) o borrar todo para volver a la detección automática vuelve a analizar el
+tema (1–2 min).
 
 Las correcciones se guardan en la carpeta de cada tema (`correcciones.json` y `estructura.txt`).
 
@@ -181,8 +183,7 @@ lleva audio, así que se pasa por WhatsApp o mail. En el celular abre directo el
 El que lo recibe lo abre con el botón de **subir** (el mismo del audio) o arrastrándolo a la ventana:
 
 - **Si ya tiene el tema**, la app pregunta y pone la hoja (avisa si reemplaza correcciones suyas, o si su audio
-  dura distinto: con otra grabación los acordes quedarían corridos). Si cambian las secciones, vuelve a analizar
-  el tema (1–2 min).
+  dura distinto: con otra grabación los acordes quedarían corridos).
 - **Si no lo tiene y la hoja trae un link de YouTube**, ofrece bajarlo, separarlo y analizarlo ya con la hoja
   (unos minutos).
 - **Si no lo tiene y el tema se cargó desde un archivo**, pide elegir ese mismo audio (hay que pedírselo al que

@@ -222,13 +222,14 @@ def poner(base, hoja):
     analizar (cambió la estructura o el compás, o el tema no estaba analizado); si no, ya quedó aplicada."""
     ruta_est = os.path.join(base, "estructura.txt")
     ruta = os.path.join(base, "analisis", "app.json")
+    antes = _estructura(base)
     cambia = hoja["estructura"] is not None and not _misma_estructura(base, hoja["estructura"])
     if cambia:
         with open(ruta_est, "w", encoding="utf-8") as f:
             f.write(hoja["estructura"])
     corr = hoja["correcciones"]
     analisis.guardar_correcciones(base, corr)
-    if cambia or not os.path.exists(ruta):
+    if not os.path.exists(ruta):
         return True
     with open(ruta, encoding="utf-8") as f:
         out = json.load(f)
@@ -236,7 +237,12 @@ def poner(base, hoja):
         return True
     if not corr["compas"] and (out.get("correcciones") or {}).get("compas"):
         return True                         # el local tenía el compás forzado y la hoja usa el detectado
-    analisis.aplicar_correcciones(out, corr)
+    if cambia:                              # secciones nuevas: al instante, salvo que fuercen un compás
+        out = analisis.aplicar_estructura(base, antes)
+        if out is None:
+            return True
+    else:
+        analisis.aplicar_correcciones(out, corr)
+        analisis.guardar(base, out)
     analisis.guardar_correcciones(base, out["correcciones"])
-    analisis.guardar(base, out)
     return False

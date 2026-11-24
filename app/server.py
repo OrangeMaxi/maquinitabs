@@ -208,9 +208,17 @@ def estructura(cid):
         if ocupada(cid):
             return jsonify({"error": OCUPADA}), 409
         d = request.get_json(force=True)
-        with open(ruta, "w", encoding="utf-8") as f:
-            f.write(d.get("texto", ""))
-        return jsonify(publico(encolar(base=base, cancion=cid, titulo=cid)))
+        antes = None
+        if os.path.exists(ruta):
+            with open(ruta, encoding="utf-8") as f:
+                antes = f.read()
+        with candado_json:
+            with open(ruta, "w", encoding="utf-8") as f:
+                f.write(d.get("texto", ""))
+            out = analisis.aplicar_estructura(base, antes)     # nombres y tiempos: al instante
+        if out is not None:
+            return jsonify({"cancion": out})
+        return jsonify({"trabajo": publico(encolar(base=base, cancion=cid, titulo=cid))})
     texto = ""
     if os.path.exists(ruta):
         with open(ruta, encoding="utf-8") as f:
