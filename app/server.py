@@ -10,9 +10,12 @@ import time
 import traceback
 import uuid
 
+from urllib.parse import quote
+
 from flask import Flask, abort, jsonify, request, send_file, send_from_directory
 
 import analisis
+import hojas
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.environ.get("CANCIONES_RAIZ") or os.path.dirname(os.path.dirname(AQUI))
@@ -59,13 +62,16 @@ def trabajador():
                 analisis.separar(base, progreso)
             elif t.get("subido"):                    # archivo subido: convertir y separar
                 progreso("Convirtiendo el audio…", 3)
+                hoja = t.get("hoja") or {}
                 try:
-                    base = analisis.importar(t["subido"], t["archivo"], RAIZ)
+                    base = analisis.importar(t["subido"], t["archivo"], RAIZ, hoja.get("titulo"), hoja.get("artista"))
                 finally:
                     os.remove(t["subido"])
                 t["cancion"] = os.path.basename(base)
                 t["titulo"] = t["cancion"]
                 analisis.separar(base, progreso)
+            if t.get("hoja"):                        # tema nuevo que llegó con una hoja compartida
+                hojas.poner(base, t["hoja"])
             analisis.analizar(base, t.get("compas"), progreso)
             t["estado"] = "listo"
             t["pct"] = 100
@@ -84,6 +90,21 @@ def encolar(**datos):
     trabajos[t["id"]] = t
     cola.put(t)
     return t
+
+
+def ocupada(cid):
+    """¿El tema está en cola o analizándose? Entonces no se tocan sus correcciones ni su estructura."""
+    return any(t.get("cancion") == cid and t["estado"] in ("en cola", "en curso") for t in trabajos.values())
+
+
+def bajando(url):
+    """El trabajo que ya está bajando o por bajar ese video de YouTube, si hay."""
+    yt = hojas.id_youtube(url)
+    return next((t for t in trabajos.values() if yt and t["estado"] in ("en cola", "en curso")
+                 and hojas.id_youtube(t.get("url")) == yt), None)
+
+
+OCUPADA = "Ese tema se está analizando: esperá a que termine."
 
 
 def publico(t):
@@ -125,9 +146,13 @@ def lista():
 def nueva():
     d = request.get_json(force=True)
     url = (d.get("url") or "").strip()
-    if not re.match(r"^https?://([\w-]+\.)?(youtube\.com|youtu\.be)/", url):
+    if not es_youtube(url):
         return jsonify({"error": "Pegá un link de YouTube (youtube.com o youtu.be)."}), 400
     return jsonify(publico(encolar(url=url, titulo=url)))
+
+
+def es_youtube(url):
+    return bool(re.match(r"^https?://([\w-]+\.)?(youtube\.com|youtu\.be)/", url or ""))
 
 
 FORMATOS = (".mp3", ".m4a", ".aac", ".wav", ".flac", ".ogg", ".opus", ".webm", ".mp4")
@@ -144,8 +169,15 @@ def subir():
         return jsonify({"error": "Formato no soportado. Probá con mp3, m4a, wav, flac u ogg."}), 400
     os.makedirs(os.path.join(RAIZ, "_subidas"), exist_ok=True)
     tmp = os.path.join(RAIZ, "_subidas", uuid.uuid4().hex + os.path.splitext(nombre)[1].lower())
+    hoja = None
+    if request.form.get("hoja"):           # el audio de una hoja compartida que se hizo con un archivo
+        try:
+            hoja = hojas.leer(json.loads(request.form["hoja"]))
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
     f.save(tmp)
-    return jsonify(publico(encolar(subido=tmp, archivo=nombre, titulo=os.path.splitext(nombre)[0])))
+    return jsonify(publico(encolar(subido=tmp, archivo=nombre, hoja=hoja,
+                                   titulo=hoja["titulo"] if hoja else os.path.splitext(nombre)[0])))
 
 
 @app.post("/api/canciones/<cid>/analizar")
@@ -173,6 +205,8 @@ def estructura(cid):
     base = carpeta_de(cid)
     ruta = os.path.join(base, "estructura.txt")
     if request.method == "PUT":
+        if ocupada(cid):
+            return jsonify({"error": OCUPADA}), 409
         d = request.get_json(force=True)
         with open(ruta, "w", encoding="utf-8") as f:
             f.write(d.get("texto", ""))
@@ -193,19 +227,12 @@ def correcciones(cid):
     ruta = os.path.join(base, "analisis", "app.json")
     if not os.path.exists(ruta):
         abort(404)
-    d = request.get_json(force=True)
+    if ocupada(cid):
+        return jsonify({"error": OCUPADA}), 409
     try:
-        corr = {
-            "compas": int(d["compas"]) if d.get("compas") else None,
-            "acordes": [[float(t), str(a)[:16]] for t, a in d.get("acordes") or []],
-            "unos": [float(t) for t in d.get("unos") or []] or None,
-            "pistas": {p: [[round(float(t), 3), str(a)[:16]] for t, a in v]
-                       for p, v in (d.get("pistas") or {}).items() if p in ("guitar", "piano", "otros") and v},
-        }
-    except (TypeError, ValueError, AttributeError):
-        return jsonify({"error": "Correcciones mal formadas."}), 400
-    if corr["compas"] not in (None, 2, 3, 4, 5, 6, 7):
-        return jsonify({"error": "Compás no válido."}), 400
+        corr = hojas.validar_correcciones(request.get_json(force=True))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     with candado_json:
         with open(ruta, encoding="utf-8") as f:
             out = json.load(f)
@@ -217,6 +244,59 @@ def correcciones(cid):
         analisis.guardar_correcciones(base, out["correcciones"])
         analisis.guardar(base, out)
     return jsonify({"cancion": out})
+
+
+@app.get("/api/canciones/<cid>/hoja")
+def exportar_hoja(cid):
+    """La hoja corregida del tema en un archivo .maquinitabs, para pasársela a otro de la banda."""
+    base = carpeta_de(cid)
+    if not os.path.exists(os.path.join(base, "analisis", "app.json")):
+        abort(404)
+    hoja = hojas.exportar(base, VERSION)
+    r = app.response_class(json.dumps(hoja, ensure_ascii=False, indent=1), mimetype="application/json")
+    r.headers["Content-Disposition"] = "attachment; filename*=UTF-8''" + quote(hojas.nombre_archivo(hoja))
+    return r
+
+
+
+
+@app.post("/api/hojas")
+def abrir_hoja():
+    """Una hoja compartida (.maquinitabs). accion: "ver" (¿está el tema en esta compu?), "abrir" (ponerla en el
+    tema que ya está) o "descargar" (bajar el tema de YouTube, separarlo y analizarlo ya con la hoja)."""
+    d = request.get_json(force=True, silent=True) or {}
+    try:
+        hoja = hojas.leer(d.get("hoja"))
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    accion = d.get("accion") or "ver"
+    cid = hojas.buscar(RAIZ, hoja)
+    if accion == "ver":
+        if cid:
+            return jsonify({"existe": True, **hojas.describir(RAIZ, cid, hoja)})
+        return jsonify({"existe": False, "youtube": es_youtube(hoja["fuente"]), "titulo": hoja["titulo"],
+                        "artista": hoja["artista"], "bajando": bool(bajando(hoja["fuente"]))})
+    if accion == "abrir":
+        if not cid:
+            return jsonify({"error": "Ese tema no está en esta compu."}), 404
+        if ocupada(cid):
+            return jsonify({"error": OCUPADA[:-1] + " y abrí la hoja de nuevo."}), 409
+        base = carpeta_de(cid)
+        with candado_json:
+            reanalizar = hojas.poner(base, hoja)
+        if reanalizar:
+            return jsonify({"cancion": cid, "trabajo": publico(encolar(base=base, cancion=cid, titulo=cid))})
+        return jsonify({"cancion": cid})
+    if accion == "descargar":
+        if cid:
+            return jsonify({"error": "Ese tema ya está en esta compu."}), 409
+        if not es_youtube(hoja["fuente"]):
+            return jsonify({"error": "La hoja no trae un link de YouTube: subí el audio del tema."}), 400
+        if bajando(hoja["fuente"]):
+            return jsonify({"error": "Ese tema ya se está bajando: cuando termine, abrí la hoja de nuevo."}), 409
+        nombre = f'{hoja["titulo"]} - {hoja["artista"]}' if hoja["artista"] else hoja["titulo"]
+        return jsonify({"trabajo": publico(encolar(url=hoja["fuente"], titulo=nombre, hoja=hoja))})
+    return jsonify({"error": "Acción desconocida."}), 400
 
 
 @app.get("/api/canciones/<cid>/audio/<pista>")

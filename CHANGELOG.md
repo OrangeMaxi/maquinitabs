@@ -8,6 +8,11 @@ Lo nuevo de cada versión de Maquinitabs, de la más reciente a la más vieja. L
 
 ### Agregado
 
+- **Compartir la hoja con la banda.** «Compartir» baja un archivo `.maquinitabs` (unos KB, sin audio) con la
+  hoja como se ve: acordes, compases, secciones y la hoja de cada instrumento. Otro de la banda lo abre con el
+  botón de subir o arrastrándolo: si ya tiene el tema se le pone la hoja; si no, la app ofrece bajarlo de
+  YouTube y analizarlo ya con la hoja, o le pide el archivo de audio si el tema no salió de YouTube. Avisa si
+  reemplaza correcciones propias o si el audio dura distinto. En el celular abre el menú de compartir.
 - **Volumen general**, primero en el panel de pistas: sube o baja (o silencia con «M») todas las pistas, el
   metrónomo y la cuenta previa juntos. Se recuerda entre temas.
 - Set de prueba de transcripción (`pruebas/transcripcion`): compara modelos nota por nota con GuitarSet y EGDB

@@ -72,12 +72,15 @@ async function sondear() {
 }
 
 // subir un archivo de audio en vez de pegar un link (en un servidor en internet YouTube suele bloquear las descargas)
-$('#btn-subir').onclick = () => $('#archivo').click();
+$('#btn-subir').onclick = () => { hojaEsperandoAudio = null; $('#archivo').click(); };
 $('#archivo').onchange = async () => {
   const f = $('#archivo').files[0];
   if (!f) return;
+  if (esHoja(f)) { $('#archivo').value = ''; abrirHoja(f); return; }
   const datos = new FormData();
   datos.append('archivo', f);
+  if (hojaEsperandoAudio) datos.append('hoja', JSON.stringify(hojaEsperandoAudio));   // ver abrirHoja()
+  hojaEsperandoAudio = null;
   $('#btn-subir').disabled = true;
   if (cajon()) ponerPanel(true);                       // el progreso se ve en el panel
   $('#trabajos').insertAdjacentHTML('afterbegin', `<div class="trabajo" id="subiendo"><b>${esc(f.name)}</b><span>Subiendo…</span></div>`);
@@ -1493,6 +1496,84 @@ $('#vel-menos').onclick = () => ponerVelocidad(A.vel - 0.05);
 $('#vel-mas').onclick = () => ponerVelocidad(A.vel + 0.05);
 pintarVelocidad();
 $('#btn-imprimir').onclick = () => window.print();
+
+// ----------------------------------------------------------------- hojas compartidas (.maquinitabs)
+// Un archivo chico con lo corregido a mano (secciones, acordes, compases, hoja de cada instrumento) y de qué
+// audio salió. No lleva audio: el que lo abre usa su copia del tema o la baja de YouTube.
+let hojaEsperandoAudio = null;      // hoja de un tema subido como archivo: espera que elijan ese audio
+const esHoja = (f) => /\.maquinitabs$/i.test(f.name);
+
+async function compartirHoja() {
+  if (!E.id) return;
+  try {
+    const r = await fetch(`/api/canciones/${encodeURIComponent(E.id)}/hoja`);
+    if (!r.ok) throw new Error('No se pudo armar la hoja.');
+    const nombre = decodeURIComponent(((r.headers.get('Content-Disposition') || '').split("''")[1]) || 'hoja.maquinitabs');
+    // text/plain: Android solo deja compartir texto, imágenes, audio, video y PDF (el contenido es JSON igual)
+    const archivo = new File([await r.blob()], nombre, { type: 'text/plain' });
+    // en el celular, directo al menú de compartir (WhatsApp, mail…), si el navegador lo permite
+    if (matchMedia('(pointer: coarse)').matches && navigator.canShare && navigator.canShare({ files: [archivo] })) {
+      try { await navigator.share({ files: [archivo], title: `Hoja de ${E.c.titulo}` }); return; } catch (e) { if (e.name === 'AbortError') return; }
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(archivo);
+    a.download = nombre;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  } catch (e) { alert(e.message); }
+}
+$('#btn-compartir').onclick = compartirHoja;
+$('#hoja-audio-cancelar').onclick = () => { hojaEsperandoAudio = null; $('#dlg-hoja-audio').close(); };
+$('#hoja-audio-elegir').onclick = () => { $('#dlg-hoja-audio').close(); $('#archivo').click(); };
+
+async function abrirHoja(f) {
+  let hoja;
+  try { hoja = JSON.parse(await f.text()); } catch (e) { alert('Ese archivo no es una hoja de Maquinitabs.'); return; }
+  const pedir = (accion) => api('hojas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hoja, accion }) });
+  try {
+    const v = await pedir('ver');
+    const tema = `«${hoja.titulo}»${hoja.artista ? ` de ${hoja.artista}` : ''}`;
+    if (v.existe) {
+      const texto = [`¿Abrir la hoja corregida de ${tema}?`];
+      if (v.propias) texto.push('Reemplaza las correcciones que tenías en este tema.');
+      v.avisos.forEach((a) => texto.push('⚠ ' + a));
+      if (!confirm(texto.join('\n\n'))) return;
+      const r = await pedir('abrir');
+      if (r.trabajo) {                         // cambió la estructura o el compás: hay que volver a analizar
+        if (r.cancion === E.id) { pausar(); E.edicion = false; pintar(); }   // lo que está en pantalla ya no vale
+        if (cajon()) ponerPanel(true);
+        seguir(r.trabajo);
+      } else {
+        await cargarLista();
+        abrir(r.cancion);
+      }
+    } else if (v.bajando) {
+      alert(`${tema} ya se está bajando. Cuando termine, abrí la hoja de nuevo.`);
+    } else if (v.youtube) {
+      if (!confirm(`No tenés ${tema}.\n\n¿Lo bajo de YouTube y lo analizo con la hoja corregida? Tarda unos minutos.`)) return;
+      const r = await pedir('descargar');
+      silbato();
+      if (cajon()) ponerPanel(true);
+      seguir(r.trabajo);
+    } else {
+      // el selector de archivos solo se abre con un clic de verdad: por eso un diálogo con su botón
+      $('#hoja-audio-tema').textContent = tema;
+      hojaEsperandoAudio = hoja;
+      $('#dlg-hoja-audio').showModal();
+    }
+  } catch (e) { alert(e.message); }
+}
+
+// arrastrar una hoja compartida a la ventana también la abre
+document.addEventListener('dragover', (ev) => { if ([...ev.dataTransfer.items].some((i) => i.kind === 'file')) ev.preventDefault(); });
+document.addEventListener('drop', (ev) => {
+  if (!ev.dataTransfer.files.length) return;
+  ev.preventDefault();                   // que el navegador no abra el archivo en vez de la app
+  const f = [...ev.dataTransfer.files].find(esHoja);
+  if (f) abrirHoja(f);
+});
 
 const dlg = $('#dlg-estructura');
 $('#btn-estructura').onclick = async () => {

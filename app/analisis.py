@@ -309,9 +309,11 @@ def aplicar_correcciones(out, corr):
     largos, anacrusa, unos = base["largos"], base["anacrusa"], None
     if corr.get("unos"):
         ini = sorted({cerca(t) for t in corr["unos"]} | {0})
-        largos = [b - a for a, b in zip(ini, ini[1:] + [nb])]
-        anacrusa = len(largos) > 1 and largos[0] < out["compas"]
-        unos = [round(float(tb[k]), 3) for k in ini]
+        # iguales a las detectadas (p. ej. una hoja compartida, que trae todas las barras): no es una corrección
+        if ini != [int(x) for x in np.cumsum([0] + list(base["largos"][:-1]))]:
+            largos = [b - a for a, b in zip(ini, ini[1:] + [nb])]
+            anacrusa = len(largos) > 1 and largos[0] < out["compas"]
+            unos = [round(float(tb[k]), 3) for k in ini]
 
     compases, k = [], 0
     for j, n in enumerate(largos):
@@ -501,6 +503,8 @@ def analizar(base, compas=None, progreso=_noop):
         "creditos": creditos_de(base, meta["titulo"], meta["artista"], progreso),
     }
     aplicar_correcciones(out, corr)
+    # queda solo lo que difiere de lo detectado (p. ej. una hoja compartida trae el acorde de cada pulso)
+    guardar_correcciones(base, out["correcciones"])
     guardar(base, out)
     progreso("Listo", 100)
     return out

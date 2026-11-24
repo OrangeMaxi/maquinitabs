@@ -27,10 +27,10 @@
     </button>
     <form id="form-url">
       <input id="url" type="url" placeholder="Pegá un link de YouTube de una canción…" autocomplete="off" required>
-      <button type="button" id="btn-subir" class="subir" title="Subir un archivo de audio (mp3, m4a, wav, flac…). Nombre ideal: «Artista - Tema.mp3»" aria-label="Subir un archivo de audio">
+      <button type="button" id="btn-subir" class="subir" title="Subir un archivo de audio (mp3, m4a, wav, flac…; nombre ideal: «Artista - Tema.mp3») o una hoja compartida (.maquinitabs)" aria-label="Subir un archivo de audio o una hoja compartida">
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
       </button>
-      <input id="archivo" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.flac,.ogg,.opus,.webm,.mp4" hidden>
+      <input id="archivo" type="file" accept="audio/*,.mp3,.m4a,.aac,.wav,.flac,.ogg,.opus,.webm,.mp4,.maquinitabs,text/plain,application/json,application/octet-stream" hidden>
       <button type="submit" class="primario locomotora" title="Analizar" aria-label="Analizar">
         <!-- locomotora a vapor estilo 🚂, mirando a la derecha: cabina atrás, caldera, chimenea adelante -->
         <svg viewBox="0 -7 66 48" width="56" height="41" aria-hidden="true">
@@ -81,6 +81,7 @@
         <div class="acciones-hoja">
           <button id="btn-editar" class="secundario" title="Corregir acordes y compases escuchando el tema">Editar hoja</button>
           <button id="btn-estructura" class="secundario" title="Corregir los nombres y tiempos de las secciones">Secciones</button>
+          <button id="btn-compartir" class="secundario" title="Bajar la hoja corregida (acordes, compases y secciones) en un archivo .maquinitabs para pasárselo a otro de la banda">Compartir</button>
           <button id="btn-imprimir" class="secundario">Imprimir</button>
         </div>
       </nav>
@@ -135,6 +136,14 @@
       <button id="vel-mas">+</button>
     </div>
   </footer>
+
+  <dialog id="dlg-hoja-audio">
+    <h3>Falta el audio</h3>
+    <p>No tenés <b id="hoja-audio-tema"></b>. Esta hoja se armó con un archivo de audio, no con un link de YouTube:
+      elegí ese mismo archivo (pedíselo a quien te pasó la hoja). La app lo separa y lo analiza ya con la hoja
+      corregida.</p>
+    <div class="acciones"><button id="hoja-audio-cancelar" class="secundario">Cancelar</button><button id="hoja-audio-elegir" class="primario">Elegir el audio</button></div>
+  </dialog>
 
   <dialog id="dlg-estructura">
     <h3>Estructura del tema</h3>

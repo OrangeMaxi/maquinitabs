@@ -7,7 +7,8 @@ De un link de YouTube a la sala de ensayo. Pegás el link de una canción y la a
 - arma la **hoja de acordes**, y la **partitura y tablatura** de guitarra, piano, bajo y voz;
 - deja **mutear o aislar pistas, transportar**, usar **metrónomo** y cuenta previa, y repetir una sección;
 - sugiere **escalas para improvisar** e ideas de arreglo;
-- permite **corregir a mano** acordes y compases mientras escuchás el tema («Editar hoja»).
+- permite **corregir a mano** acordes y compases mientras escuchás el tema («Editar hoja»);
+- **comparte la hoja corregida** con el resto de la banda en un archivo chico («Compartir»).
 
 Todo corre en la computadora donde se instala: no usa servicios externos, salvo YouTube para bajar el audio.
 Los resultados son automáticos y hay que revisarlos de oído.
@@ -170,6 +171,24 @@ Solo se activa en la vista **Acordes**: la partitura no se edita a mano y la imp
 **Secciones** permite cambiar los nombres y los tiempos de las partes del tema.
 
 Las correcciones se guardan en la carpeta de cada tema (`correcciones.json` y `estructura.txt`).
+
+### Compartir la hoja con la banda
+
+**Compartir** baja un archivo `Tema - Artista.maquinitabs` con la hoja tal como la ves: el acorde de cada pulso,
+dónde empieza cada compás, las secciones y lo corregido en la hoja de cada instrumento. Pesa unos pocos KB y no
+lleva audio, así que se pasa por WhatsApp o mail. En el celular abre directo el menú de compartir.
+
+El que lo recibe lo abre con el botón de **subir** (el mismo del audio) o arrastrándolo a la ventana:
+
+- **Si ya tiene el tema**, la app pregunta y pone la hoja (avisa si reemplaza correcciones suyas, o si su audio
+  dura distinto: con otra grabación los acordes quedarían corridos). Si cambian las secciones, vuelve a analizar
+  el tema (1–2 min).
+- **Si no lo tiene y la hoja trae un link de YouTube**, ofrece bajarlo, separarlo y analizarlo ya con la hoja
+  (unos minutos).
+- **Si no lo tiene y el tema se cargó desde un archivo**, pide elegir ese mismo audio (hay que pedírselo al que
+  mandó la hoja).
+
+Para papel, **Imprimir** → «Guardar como PDF» sigue sirviendo, pero ese PDF no se puede volver a abrir en la app.
 
 ## Problemas frecuentes
 
