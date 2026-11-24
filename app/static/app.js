@@ -238,7 +238,7 @@ function acordesDe(c, p) {
   const out = [];
   for (let k = c.beat; k < c.beat + c.pulsos; k++) {
     const x = pr[k] || '';
-    if (out.length && out[out.length - 1][0] === x) out[out.length - 1][1] += 1; else out.push([x, 1]);
+    if (out.length && igualAcorde(out[out.length - 1][0], x)) out[out.length - 1][1] += 1; else out.push([x, 1]);
   }
   // un pulso suelto de silencio entre dos tramos del mismo acorde es un respiro, no un corte
   for (let j = 1; j + 1 < out.length; j++) {
@@ -258,10 +258,15 @@ function instrumentoPrincipal() {
   return mejor;
 }
 function acordesUsados(p) {           // [{nombre (transportado), pulsos}] por orden de uso; p = solo lo que toca esa pista
+  // por nombre ya escrito: lo detectado puede venir en bemoles (Gb) y lo corregido en sostenidos (F#), y es el mismo acorde
   const m = new Map();
-  E.c.compases.forEach((c) => acordesDe(c, p).forEach(([a, n]) => { if (a && a !== 'N.C.' && a !== LINEA) m.set(a, (m.get(a) || 0) + n); }));
-  return [...m].sort((a, b) => b[1] - a[1]).map(([a, n]) => ({ nombre: nom(a), pulsos: n }));
+  E.c.compases.forEach((c) => acordesDe(c, p).forEach(([a, n]) => {
+    if (a && a !== 'N.C.' && a !== LINEA) { const k = nom(a); m.set(k, (m.get(k) || 0) + n); }
+  }));
+  return [...m].sort((a, b) => b[1] - a[1]).map(([nombre, pulsos]) => ({ nombre, pulsos }));
 }
+// mismo acorde aunque esté escrito distinto (Gb = F#)
+const igualAcorde = (a, b) => a === b || (!!a && !!b && a !== LINEA && b !== LINEA && a !== 'N.C.' && b !== 'N.C.' && nom(a) === nom(b));
 
 // ================================================================= audio
 function ctxAudio() {
@@ -1198,13 +1203,16 @@ function compasEn(t) {
   while (a < b) { const m = (a + b + 1) >> 1; if (cs[m].t <= t) a = m; else b = m - 1; }
   return a;
 }
+// el acorde que suena en el tiempo t del compás i, según la hoja abierta (la de un instrumento o la del tema)
 function acordeEn(i, t) {
   const c = E.c.compases[i];
+  const p = ID_INST[E.vista] && pista(ID_INST[E.vista]);
+  const tramos = p && propios(p) ? acordesDe(c, p) : c.acordes;
   let pulso = 0;
   while (pulso + 1 < c.pulsos && E.c.beats[c.beat + pulso + 1] <= t) pulso++;
   let acum = 0;
-  for (const [a, n] of c.acordes) { acum += n; if (pulso < acum) return a; }
-  return c.acordes[c.acordes.length - 1][0];
+  for (const [a, n] of tramos) { acum += n; if (pulso < acum) return a; }
+  return tramos[tramos.length - 1][0];
 }
 const cursor = document.createElement('div');
 cursor.className = 'cursor';
@@ -1289,10 +1297,11 @@ function refrescar(forzar) {
   const s = seccionDe(i);
   if (vigilarBucle()) return;
   if (A.tocando && t >= E.c.duracion - 0.05) { pausar(); A.pos = 0; }
-  const a = nom(acordeEn(i, t));
+  const crudo = acordeEn(i, t);
+  const a = crudo && crudo !== LINEA ? nom(crudo) : crudo;
   if (a !== E.acordeActual || forzar) {
     E.acordeActual = a;
-    $('#acorde-actual').textContent = T.ver(a);
+    $('#acorde-actual').textContent = !a ? '–' : a === LINEA ? a : T.ver(a);
     $$('.diagramas .cont').forEach((d) => d.classList.toggle('actual', d.dataset.acorde === a));
   }
   $('#seccion-actual').textContent = s ? s.nombre : ' ';

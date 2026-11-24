@@ -33,6 +33,10 @@ Lo nuevo de cada versión de Maquinitabs, de la más reciente a la más vieja. L
 
 ### Arreglado
 
+- **Diagramas de acordes repetidos y mal resaltados.** Un acorde detectado en bemoles (Gb) y el mismo corregido en
+  sostenidos (F#) salían como dos diagramas. Y mientras suena, en la hoja de un instrumento se resaltaba el acorde
+  de «Tema completo» y no el de esa hoja (p. ej. B en vez del Bsus2 corregido en la guitarra); abajo, en el
+  reproductor, pasaba lo mismo.
 - **Secciones se aplica al instante.** Cambiar nombres o tiempos de las secciones ya no vuelve a analizar el tema
   (antes tardaba 1-2 minutos y, con el panel oculto, la hoja seguía igual sin avisar: parecía que no tomaba los
   cambios). Solo se re-analiza al forzar un compás («[7/4]») o al borrar todo para volver a la detección
