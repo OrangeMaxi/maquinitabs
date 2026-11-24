@@ -387,6 +387,57 @@ def aplicar_estructura(base, texto_anterior=None):
     return out
 
 
+_PC = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
+
+
+def _nota(n):
+    """"F#" / "Gb" -> 6; None si no es una nota."""
+    m = re.fullmatch(r"([A-G])([#b]*)", n or "")
+    return None if not m else (_PC[m.group(1)] + m.group(2).count("#") - m.group(2).count("b")) % 12
+
+
+def mismo_acorde(a, b):
+    """¿Es el mismo acorde aunque esté escrito distinto? (Gb = F#, Dbm7/Ab = C#m7/G#)"""
+    if a == b:
+        return True
+    pa = re.fullmatch(r"([A-G][#b]*)([^/]*)(?:/([A-G][#b]*))?", a or "")
+    pb = re.fullmatch(r"([A-G][#b]*)([^/]*)(?:/([A-G][#b]*))?", b or "")
+    return bool(pa and pb and _nota(pa.group(1)) == _nota(pb.group(1)) and pa.group(2) == pb.group(2)
+                and _nota(pa.group(3)) == _nota(pb.group(3)))
+
+
+def es_acorde(a):
+    return bool(re.match(r"[A-G]", a or ""))         # no "" (no toca), "♪" (línea) ni "N.C."
+
+
+def pasar_al_tema(out, antes, corr):
+    """Lo que se corrige en la hoja de un instrumento (guitarra, piano, otros) también corrige la armonía del tema
+    («Tema completo»), pulso por pulso. Compara las correcciones de instrumento de antes (`antes`: {pista:
+    [[t, acorde]…]}) con las nuevas (`corr["pistas"]`) y cambia `corr["acordes"]`:
+    - un acorde nuevo o cambiado en un instrumento pasa a ser el acorde del tema en ese pulso;
+    - si se borra («Volver a lo detectado», o «–»/«♪»), el tema vuelve a lo detectado en ese pulso, salvo que
+      después lo hayan corregido a otra cosa en Tema completo.
+    Solo pasa lo que cambia: una corrección hecha después en Tema completo no se pisa al editar otro compás."""
+    tb = np.array(out["beats"][:-1])
+    if not len(tb):
+        return corr
+    pulso = lambda t: int(np.argmin(np.abs(tb - t)))
+    actual = [a for c in out["compases"] for a, n in c["acordes"] for _ in range(n)]   # el tema como se ve
+    tema = {pulso(t): a for t, a in corr.get("acordes") or []}
+    for p in ("guitar", "piano", "otros"):
+        viejo = {pulso(t): a for t, a in (antes or {}).get(p) or []}
+        nuevo = {pulso(t): a for t, a in (corr.get("pistas") or {}).get(p) or []}
+        for k, a in viejo.items():                       # borrado: el tema vuelve a lo detectado
+            if (k not in nuevo or not es_acorde(nuevo[k])) and es_acorde(a) and mismo_acorde(tema.get(k), a):
+                del tema[k]
+        for k, a in nuevo.items():                       # nuevo o cambiado: pasa al tema
+            if es_acorde(a) and not mismo_acorde(viejo.get(k), a) and k < len(actual) \
+                    and not mismo_acorde(actual[k], a):
+                tema[k] = a
+    corr["acordes"] = [[round(float(tb[k]), 3), a] for k, a in sorted(tema.items())]
+    return corr
+
+
 # ---------------------------------------------------------------- análisis completo
 def analizar(base, compas=None, progreso=_noop):
     """compas: 3 o 4 para forzarlo; None = el que eligió el usuario en la app (correcciones.json) o,

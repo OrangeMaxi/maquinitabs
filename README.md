@@ -165,6 +165,8 @@ Solo se activa en la vista **Acordes**: la partitura no se edita a mano y la imp
 - **Escuchar** reproduce solo ese compás.
 - **Pulsos del compás (− / +)**, **Partir en dos** y **Unir con el siguiente** mueven las barras de compás
   (de todo el tema, en todas las hojas).
+- Lo que corregís en la hoja de un instrumento también corrige **Tema completo** en esos pulsos (al revés no: la
+  armonía del tema no cambia lo que toca cada instrumento).
 - **Volver a lo detectado** borra las correcciones de la hoja abierta: en Tema completo, las de acordes y compases
   del tema; en un instrumento, solo las de ese instrumento.
 

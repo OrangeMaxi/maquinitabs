@@ -244,6 +244,8 @@ def correcciones(cid):
     with candado_json:
         with open(ruta, encoding="utf-8") as f:
             out = json.load(f)
+        # lo corregido en la hoja de un instrumento también corrige la armonía del tema
+        analisis.pasar_al_tema(out, analisis.leer_correcciones(base)["pistas"], corr)
         if corr["compas"] and corr["compas"] != out.get("compas"):
             corr["unos"] = None          # las barras de compás puestas a mano eran para el compás anterior
             analisis.guardar_correcciones(base, corr)

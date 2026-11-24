@@ -24,6 +24,11 @@ Lo nuevo de cada versión de Maquinitabs, de la más reciente a la más vieja. L
 
 ### Cambiado
 
+- **Corregir la hoja de un instrumento corrige también Tema completo.** Un acorde cambiado en la hoja de guitarra,
+  piano u Otros pasa a ser el acorde del tema en ese pulso; «Volver a lo detectado» (o poner «–» o «♪») lo
+  devuelve a lo detectado. Lo que se corrija después en Tema completo no se pisa al editar otro compás del
+  instrumento. Las secciones y los compases ya eran comunes a todas las hojas.
+- Tema completo ya no muestra los diagramas de acordes: están en la hoja de cada instrumento.
 - **La tonalidad cambia al instante**, incluso mientras suena. Antes cada cambio rehacía en el servidor las 5
   pistas con tono (unos 5 s la primera vez en cada tono) y el navegador volvía a bajar y decodificar las 6 (unos
   160 MB). Ahora el tono lo cambia el navegador con [Signalsmith Stretch](https://signalsmith-audio.co.uk/code/stretch/)

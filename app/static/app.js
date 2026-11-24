@@ -641,8 +641,11 @@ function vistaAcordes(el) {
       ? `En esta grabación casi no suena ${el_inst}. La armonía completa del tema está en la pestaña «Tema completo».`
       : `Solo lo que toca ${el_inst}, sacado de su pista: – no suena, ${LINEA} toca una línea o notas sueltas (ver «Partitura»).${
         E.vista === 'otros' ? ' ' + avisoOtros() : ''}`}</p>`;
-  h += `<div class="diagramas">${usados.map((a) => `<div class="cont" data-acorde="${esc(a.nombre)}">${
-    E.vista === 'guitarra' || armonia ? T.svgGuitarra(a.nombre, T.ver(a.nombre)) : T.svgTeclado(T.notasAcorde(T.parse(a.nombre)), T.parse(a.nombre).raiz, T.ver(a.nombre))}</div>`).join('')}</div>`;
+  // cómo armar cada acorde: en la hoja de cada instrumento (en Tema completo no, para eso están las pestañas)
+  if (!armonia) {
+    h += `<div class="diagramas">${usados.map((a) => `<div class="cont" data-acorde="${esc(a.nombre)}">${
+      E.vista === 'guitarra' ? T.svgGuitarra(a.nombre, T.ver(a.nombre)) : T.svgTeclado(T.notasAcorde(T.parse(a.nombre)), T.parse(a.nombre).raiz, T.ver(a.nombre))}</div>`).join('')}</div>`;
+  }
   E.c.secciones.forEach((s) => {
     h += tituloSeccion(s) + '<div class="fila-compases">';
     let previo = null;
